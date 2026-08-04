@@ -21,6 +21,9 @@ okhttp = "5.4.0"
 
 datastore = "1.2.1"
 
+mapsCompose = "6.12.2"
+playServicesLocation = "21.3.0"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -37,6 +40,14 @@ androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
+
+# é um pacote de ferramentas do Google Play Services. Ele ajuda aplicativos em celulares
+# Android a acharem onde você está. O sistema faz isso de um jeito rápido e que gasta pouca bateria,
+# usando GPS, Wi-Fi e redes de celular juntos
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+
+# Google Maps
+maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
 
 # Hilt
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
