@@ -1,6 +1,6 @@
-﻿package com.master.transportes.driver.di.user
+package com.master.transportes.driver.di.driver
 
-import com.master.transportes.driver.feature.user.data.api.UserApi
+import com.master.transportes.driver.feature.driver.data.api.DriverApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -10,11 +10,11 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object UserModule {
+object DriverModule {
 
     @Provides
     @Singleton
-    fun provideUserApi(retrofit: Retrofit): UserApi {
-        return retrofit.create(UserApi::class.java)
+    fun provideDriverApi(retrofit: Retrofit): DriverApi {
+        return retrofit.create(DriverApi::class.java)
     }
 }

@@ -5,7 +5,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.master.transportes.driver.navigation.NavigationEvent
 
 @Composable
 fun LoginScreen(
@@ -15,11 +14,8 @@ fun LoginScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.navigationEvent.collect { event ->
-            when (event) {
-                is NavigationEvent.NavigateToHome -> onNavigateToHome()
-                is NavigationEvent.NavigateToLogin -> {}
-            }
+        viewModel.navigationEvent.collect {
+            onNavigateToHome()
         }
     }
 

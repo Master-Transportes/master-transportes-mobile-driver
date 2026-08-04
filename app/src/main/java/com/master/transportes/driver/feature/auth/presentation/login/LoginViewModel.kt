@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.master.transportes.driver.core.result.ApiResult
 import com.master.transportes.driver.core.session.SessionManager
 import com.master.transportes.driver.feature.auth.domain.repository.AuthRepository
-import com.master.transportes.driver.navigation.NavigationEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +24,7 @@ class LoginViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<NavigationEvent>(Channel.BUFFERED)
+    private val _navigationEvent = Channel<Unit>(Channel.BUFFERED)
     val navigationEvent = _navigationEvent.receiveAsFlow()
 
     fun onChangeLogin(login: String) {
@@ -46,7 +45,7 @@ class LoginViewModel @Inject constructor(
             )) {
                 is ApiResult.Success -> {
                     sessionManager.saveSession(result.data)
-                    _navigationEvent.send(NavigationEvent.NavigateToHome)
+                    _navigationEvent.send(Unit)
                 }
 
                 is ApiResult.Error -> {

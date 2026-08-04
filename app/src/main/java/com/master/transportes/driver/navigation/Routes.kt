@@ -4,5 +4,5 @@ sealed class Routes(
     val route: String
 ) {
     data object Login : Routes("login")
-    data object Main : Routes("main")
+    data object Home : Routes("home")
 }

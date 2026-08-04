@@ -14,7 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.master.transportes.driver.core.session.SessionManager
 import com.master.transportes.driver.feature.auth.presentation.login.LoginScreen
-import com.master.transportes.driver.feature.main.presentation.main.MainScreen
+import com.master.transportes.driver.feature.home.presentation.home.HomeScreen
 
 @Composable
 fun AppNavigation(sessionManager: SessionManager) {
@@ -25,8 +25,8 @@ fun AppNavigation(sessionManager: SessionManager) {
     LaunchedEffect(isLoggedIn) {
         if (!startAssigned) {
             startAssigned = true
-            if (isLoggedIn) {
-                navController.navigate(Routes.Main.route) {
+            if (!isLoggedIn) {
+                navController.navigate(Routes.Home.route) {
                     popUpTo(Routes.Login.route) { inclusive = true }
                 }
             }
@@ -48,20 +48,14 @@ fun AppNavigation(sessionManager: SessionManager) {
         composable(Routes.Login.route) {
             LoginScreen(
                 onNavigateToHome = {
-                    navController.navigate(Routes.Main.route) {
+                    navController.navigate(Routes.Home.route) {
                         popUpTo(Routes.Login.route) { inclusive = true }
                     }
                 }
             )
         }
-        composable(Routes.Main.route) {
-            MainScreen(
-                onNavigateToLogin = {
-                    navController.navigate(Routes.Login.route) {
-                        popUpTo(Routes.Main.route) { inclusive = true }
-                    }
-                }
-            )
+        composable(Routes.Home.route) {
+            HomeScreen()
         }
     }
 }
