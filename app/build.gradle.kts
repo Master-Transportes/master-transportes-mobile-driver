@@ -1,16 +1,22 @@
 import java.util.Properties
 
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+val mapsApiKey = localProperties.getProperty("MAPS_API_KEY")
+    ?: error("MAPS_API_KEY não encontrada no local.properties")
+
+val baseUrl = localProperties.getProperty("BASE_URL")
+    ?: error("BASE_URL não encontrada no local.properties")
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
-}
-
-val localProperties = Properties().apply {
-    val file = rootProject.file("local.properties")
-    if (file.exists()) file.inputStream().use { load(it) }
 }
 
 android {
@@ -28,9 +34,9 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY") ?: ""
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
 
-        buildConfigField("String", "BASE_URL", "\"https://ae1f-45-233-200-146.ngrok-free.app/\"")
+        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
     }
 
     buildTypes {
@@ -62,6 +68,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.core)
+
+    // Com ela, o FAB mostra o pin de localização corretamente.
+    implementation(libs.androidx.compose.material.icons.extended)
 
     // é um pacote de ferramentas do Google Play Services. Para buscar o GPS de uma forma melhor e mais otimizada
     implementation(libs.play.services.location)

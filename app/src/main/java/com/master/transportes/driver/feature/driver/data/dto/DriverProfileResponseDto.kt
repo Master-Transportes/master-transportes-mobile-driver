@@ -6,5 +6,6 @@ data class DriverProfileResponseDto(
     val email: String,
     val status: String,
     val rejectionReason: String? = null,
-    val banReason: String? = null
+    val banReason: String? = null,
+    val balance: Long = 0L
 )

@@ -25,7 +25,7 @@ fun AppNavigation(sessionManager: SessionManager) {
     LaunchedEffect(isLoggedIn) {
         if (!startAssigned) {
             startAssigned = true
-            if (!isLoggedIn) {
+            if (isLoggedIn) {
                 navController.navigate(Routes.Home.route) {
                     popUpTo(Routes.Login.route) { inclusive = true }
                 }

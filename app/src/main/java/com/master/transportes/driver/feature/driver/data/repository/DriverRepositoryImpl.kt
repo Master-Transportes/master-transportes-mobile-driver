@@ -15,4 +15,17 @@ class DriverRepositoryImpl @Inject constructor(
     override suspend fun getMe(): ApiResult<Driver> = safeApiCall {
         api.getMe().toDomain()
     }
+
+    override suspend fun getStatus(): ApiResult<Boolean> = safeApiCall {
+        api.getStatus().online
+    }
+
+    override suspend fun goOnline(): ApiResult<Boolean> = safeApiCall {
+        api.goOnline().online
+    }
+
+    override suspend fun goOffline(): ApiResult<Boolean> = safeApiCall {
+        api.goOffline().online
+    }
+
 }

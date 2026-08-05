@@ -10,5 +10,8 @@ data class HomeUiState(
     val error: AppError? = null,
     val currentLocation: LatLng? = null,
     val isLocationGranted: Boolean = false,
-    val isGpsEnabled: Boolean = true
+    val isGpsEnabled: Boolean = true,
+    val isOnline: Boolean = false,
+    val isFollowing: Boolean = true,
+    val actionErrorMessage: String? = null,
 )

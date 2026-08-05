@@ -14,5 +14,6 @@ data class Driver(
     val email: String,
     val status: DriverStatus,
     val rejectionReason: String? = null,
-    val banReason: String? = null
+    val banReason: String? = null,
+    val balanceInCents: Long = 0L
 )

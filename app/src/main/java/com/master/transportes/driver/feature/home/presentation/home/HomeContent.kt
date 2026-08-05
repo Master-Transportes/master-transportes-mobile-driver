@@ -1,200 +1,279 @@
 ﻿package com.master.transportes.driver.feature.home.presentation.home
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapType
-import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.master.transportes.driver.core.error.AppError
+import com.master.transportes.driver.feature.driver.domain.model.Driver
+import com.master.transportes.driver.feature.driver.domain.model.DriverStatus
+import com.master.transportes.driver.feature.home.presentation.home.components.FollowLocationFab
+import com.master.transportes.driver.feature.home.presentation.home.components.GpsBanner
+import com.master.transportes.driver.feature.home.presentation.home.components.PermissionBanner
+import com.master.transportes.driver.feature.home.presentation.home.map.HomeMap
+import com.master.transportes.driver.ui.components.OnlineActionButton
+import com.master.transportes.driver.ui.components.OnlineStatusBar
+import com.master.transportes.driver.ui.components.WalletBadge
 import com.master.transportes.driver.ui.theme.MasterTransportesMobileDriverTheme
 
 @Composable
 fun HomeContent(
     state: HomeUiState,
     onOpenLocationSettings: () -> Unit = {},
-    onOpenAppPermissionSettings: () -> Unit = {}
+    onOpenAppPermissionSettings: () -> Unit = {},
+    onGoOnline: () -> Unit = {},
+    onGoOffline: () -> Unit = {},
+    onToggleFollow: () -> Unit = {},
+    onActionErrorShown: () -> Unit = {}
 ) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(-23.5505, -46.6333), 12f)
     }
 
-    val currentLocation = state.currentLocation
-    var isFollowing by remember { mutableStateOf(true) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(isFollowing) {
-        if (isFollowing) {
-            currentLocation?.let {
-                cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(it, 16f))
-            }
+    LaunchedEffect(state.actionErrorMessage) {
+        state.actionErrorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            onActionErrorShown()
         }
     }
 
-    LaunchedEffect(currentLocation) {
-        if (isFollowing) {
-            currentLocation?.let {
-                cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(it, 16f))
-            }
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = {
+            OnlineStatusBar(
+                isOnline = state.isOnline,
+                onGoOnline = onGoOnline,
+                onGoOffline = onGoOffline
+            )
         }
-    }
-
-    Scaffold { innerPadding ->
+    ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-                properties = MapProperties(
-                    mapType = MapType.NORMAL,
-                    isMyLocationEnabled = state.isLocationGranted,
-                    // isTrafficEnabled = true
-                ),
-                uiSettings = MapUiSettings(
-                    zoomControlsEnabled = false,
-                    myLocationButtonEnabled = false,
-                ),
+            HomeMap(
+                currentLocation = state.currentLocation,
+                isFollowing = state.isFollowing,
+                cameraPositionState = cameraPositionState
             )
 
-            if (state.isLocationGranted) {
-                FloatingActionButton(
-                    onClick = { isFollowing = !isFollowing },
-                    containerColor = if (isFollowing) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    },
-                    contentColor = if (isFollowing) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.LocationOn,
-                        contentDescription = if (isFollowing) {
-                            "Parar de seguir minha posição"
-                        } else {
-                            "Seguir minha posição"
-                        }
-                    )
-                }
-            }
-
-            when {
-                state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-
-                state.error != null -> {
-                    val message = when (val error = state.error) {
-                        is AppError.Api -> error.message
-                        is AppError.Network, is AppError.Timeout, is AppError.SSL ->
-                            "Sem conexão com a internet."
-                        else -> "Erro inesperado. Tente novamente."
-                    }
-                    Text(
-                        text = message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 16.dp)
-                    )
-                }
-
-                state.driver != null -> {
-                    Text(
-                        text = "Olá, ${state.driver.fullName}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 16.dp)
-                    )
-                }
-            }
-
-            if (!state.isLocationGranted || !state.isGpsEnabled) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (!state.isLocationGranted) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onOpenAppPermissionSettings() }
-                        ) {
-                            Text(
-                                text = "Permissão de localização necessária. Toque para permitir.",
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        }
-                    }
-
-                    if (!state.isGpsEnabled) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onOpenLocationSettings() }
-                        ) {
-                            Text(
-                                text = "GPS desligado. Toque aqui para ativar.",
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        }
-                    }
-                }
-            }
+            HomeOverlay(
+                state = state,
+                isFollowing = state.isFollowing,
+                onToggleFollow = onToggleFollow,
+                onOpenLocationSettings = onOpenLocationSettings,
+                onOpenAppPermissionSettings = onOpenAppPermissionSettings,
+                onGoOnline = onGoOnline,
+                onGoOffline = onGoOffline
+            )
         }
     }
+}
+
+@Composable
+private fun HomeOverlay(
+    state: HomeUiState,
+    isFollowing: Boolean,
+    onToggleFollow: () -> Unit,
+    onOpenLocationSettings: () -> Unit,
+    onOpenAppPermissionSettings: () -> Unit,
+    onGoOnline: () -> Unit,
+    onGoOffline: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        TopSection(
+            state = state,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+
+        Spacer(Modifier.weight(1f))
+
+        CenterSection(state = state)
+
+        Spacer(Modifier.weight(1f))
+
+        BottomSection(
+            state = state,
+            isFollowing = isFollowing,
+            onToggleFollow = onToggleFollow,
+            onOpenLocationSettings = onOpenLocationSettings,
+            onOpenAppPermissionSettings = onOpenAppPermissionSettings,
+            onGoOnline = onGoOnline,
+            onGoOffline = onGoOffline
+        )
+    }
+}
+
+@Composable
+private fun TopSection(
+    state: HomeUiState,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        state.driver?.let { driver ->
+            WalletBadge(balanceInCents = driver.balanceInCents)
+        }
+
+        state.error?.let { error ->
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = errorMessage(error),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
+    }
+}
+
+@Composable
+private fun CenterSection(
+    state: HomeUiState,
+    modifier: Modifier = Modifier
+) {
+    if (state.isLoading) {
+        CircularProgressIndicator(modifier)
+    }
+}
+
+@Composable
+private fun BottomSection(
+    state: HomeUiState,
+    isFollowing: Boolean,
+    onToggleFollow: () -> Unit,
+    onOpenLocationSettings: () -> Unit,
+    onOpenAppPermissionSettings: () -> Unit,
+    onGoOnline: () -> Unit,
+    onGoOffline: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        ActionArea(
+            isOnline = state.isOnline,
+            isLocationGranted = state.isLocationGranted,
+            isFollowing = isFollowing,
+            onToggleFollow = onToggleFollow,
+            onGoOnline = onGoOnline,
+            onGoOffline = onGoOffline
+        )
+
+        BannerArea(
+            state = state,
+            onOpenLocationSettings = onOpenLocationSettings,
+            onOpenAppPermissionSettings = onOpenAppPermissionSettings
+        )
+    }
+}
+
+@Composable
+private fun BannerArea(
+    state: HomeUiState,
+    onOpenLocationSettings: () -> Unit,
+    onOpenAppPermissionSettings: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (!state.isLocationGranted) {
+            PermissionBanner(onClick = onOpenAppPermissionSettings)
+        }
+
+        if (!state.isGpsEnabled) {
+            GpsBanner(onClick = onOpenLocationSettings)
+        }
+    }
+}
+
+@Composable
+private fun ActionArea(
+    isOnline: Boolean,
+    isLocationGranted: Boolean,
+    isFollowing: Boolean,
+    onToggleFollow: () -> Unit,
+    onGoOnline: () -> Unit,
+    onGoOffline: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier.fillMaxWidth()) {
+        OnlineActionButton(
+            isOnline = isOnline,
+            onGoOnline = onGoOnline,
+            onGoOffline = onGoOffline,
+            modifier = Modifier.align(Alignment.Center)
+        )
+
+        if (isLocationGranted) {
+            FollowLocationFab(
+                isFollowing = isFollowing,
+                onClick = onToggleFollow,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            )
+        }
+    }
+}
+
+private fun errorMessage(error: AppError): String = when (error) {
+    is AppError.Api -> error.message
+    is AppError.Network, is AppError.Timeout, is AppError.SSL ->
+        "Sem conexão com a internet."
+    else -> "Erro inesperado. Tente novamente."
 }
 
 @Preview(showBackground = true)
 @Composable
 fun HomePreview() {
     MasterTransportesMobileDriverTheme {
-        HomeContent(state = HomeUiState())
+        HomeContent(state = HomeUiState(
+            isLoading = false,
+            driver = Driver(
+                id="1",
+                fullName = "Enderson Alves da Silva",
+                email = "masterzarby@gmail.com",
+                status = DriverStatus.APPROVED,
+                balanceInCents = 15922L
+            ),
+            isOnline = false,
+            isLocationGranted = true,
+            isGpsEnabled = true,
+
+        ))
     }
 }

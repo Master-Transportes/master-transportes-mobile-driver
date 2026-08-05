@@ -31,6 +31,7 @@ class HomeViewModel @Inject constructor(
     init {
         loadDriver()
         observeGps()
+        loadStatus()
     }
 
     private fun loadDriver() {
@@ -41,6 +42,50 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { it.copy(driver = result.data, isLoading = false) }
                 is ApiResult.Error ->
                     _uiState.update { it.copy(error = result.error, isLoading = false) }
+            }
+        }
+    }
+
+    fun onGoOnline() {
+        viewModelScope.launch {
+            when (val result = driverRepository.goOnline()) {
+                is ApiResult.Success ->
+                    _uiState.update { it.copy(isOnline = result.data) }
+                is ApiResult.Error ->
+                    _uiState.update {
+                        it.copy(actionErrorMessage = "Não foi possível ficar online. Tente novamente.")
+                    }
+            }
+        }
+    }
+
+    fun onGoOffline() {
+        viewModelScope.launch {
+            when (val result = driverRepository.goOffline()) {
+                is ApiResult.Success ->
+                    _uiState.update { it.copy(isOnline = result.data) }
+                is ApiResult.Error ->
+                    _uiState.update {
+                        it.copy(actionErrorMessage = "Não foi possível ficar offline. Tente novamente.")
+                    }
+            }
+        }
+    }
+
+    fun onActionErrorShown() {
+        _uiState.update { it.copy(actionErrorMessage = null) }
+    }
+
+    fun onToggleFollow() {
+        _uiState.update { it.copy(isFollowing = !it.isFollowing) }
+    }
+
+    private fun loadStatus(){
+        viewModelScope.launch {
+            when (val result = driverRepository.getStatus()) {
+                is ApiResult.Success ->
+                    _uiState.update { it.copy(isOnline = result.data) }
+                is ApiResult.Error -> Unit
             }
         }
     }

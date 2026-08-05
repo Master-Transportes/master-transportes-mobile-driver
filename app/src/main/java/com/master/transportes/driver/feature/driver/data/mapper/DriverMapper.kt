@@ -11,7 +11,8 @@ fun DriverProfileResponseDto.toDomain(): Driver {
         email = email,
         status = status.toDriverStatus(),
         rejectionReason = rejectionReason,
-        banReason = banReason
+        banReason = banReason,
+        balanceInCents = balance
     )
 }
 
