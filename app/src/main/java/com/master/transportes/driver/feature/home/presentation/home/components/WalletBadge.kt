@@ -1,4 +1,4 @@
-package com.master.transportes.driver.ui.components
+package com.master.transportes.driver.feature.home.presentation.home.components
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +18,7 @@ import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
-fun WalletBadge(
+internal fun WalletBadge(
     balanceInCents: Long,
     modifier: Modifier = Modifier
 ) {

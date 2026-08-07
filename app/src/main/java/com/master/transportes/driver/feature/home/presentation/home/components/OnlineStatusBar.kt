@@ -1,4 +1,4 @@
-package com.master.transportes.driver.ui.components
+package com.master.transportes.driver.feature.home.presentation.home.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun OnlineStatusBar(
+internal fun OnlineStatusBar(
     isOnline: Boolean,
     onGoOnline: () -> Unit,
     onGoOffline: () -> Unit,

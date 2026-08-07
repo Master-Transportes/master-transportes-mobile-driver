@@ -2,6 +2,7 @@
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.master.transportes.driver.core.error.AppError
 import com.master.transportes.driver.core.result.ApiResult
 import com.master.transportes.driver.core.session.SessionManager
 import com.master.transportes.driver.feature.auth.domain.repository.AuthRepository
@@ -23,7 +24,6 @@ class LoginViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
-
     private val _navigationEvent = Channel<Unit>(Channel.BUFFERED)
     val navigationEvent = _navigationEvent.receiveAsFlow()
 
@@ -37,7 +37,14 @@ class LoginViewModel @Inject constructor(
 
     fun login() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    loginError = null,
+                    passwordError = null
+                )
+            }
 
             when (val result = repository.login(
                 login = _uiState.value.login,
@@ -49,11 +56,30 @@ class LoginViewModel @Inject constructor(
                 }
 
                 is ApiResult.Error -> {
-                    _uiState.update { it.copy(error = result.error) }
+                    _uiState.update {
+                        it.copy(
+                            errorMessage = errorMessageOf(result.error),
+                            loginError = fieldMessageOf(result.error, "login"),
+                            passwordError = fieldMessageOf(result.error, "password")
+                        )
+                    }
                 }
             }
 
             _uiState.update { it.copy(isLoading = false) }
         }
     }
+
+    private fun errorMessageOf(error: AppError): String = when (error) {
+        is AppError.Api -> error.message
+        is AppError.Network, is AppError.Timeout, is AppError.SSL ->
+            "Sem conexão com a internet."
+        else -> "Erro inesperado. Tente novamente."
+    }
+
+    private fun fieldMessageOf(error: AppError, field: String): String? =
+        (error as? AppError.Api)
+            ?.details
+            ?.find { it.field == field }
+            ?.message
 }

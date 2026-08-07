@@ -1,10 +1,10 @@
 ﻿package com.master.transportes.driver.feature.auth.presentation.login
 
-import com.master.transportes.driver.core.error.AppError
-
 data class LoginUiState(
-    var login: String = "",
-    var password: String = "",
-    var isLoading: Boolean = false,
-    var error: AppError? = null,
+    val login: String = "",
+    val password: String = "",
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val loginError: String? = null,
+    val passwordError: String? = null,
 )

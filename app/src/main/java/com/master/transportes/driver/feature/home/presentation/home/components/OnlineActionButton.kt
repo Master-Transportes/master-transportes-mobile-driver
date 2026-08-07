@@ -1,4 +1,4 @@
-package com.master.transportes.driver.ui.components
+package com.master.transportes.driver.feature.home.presentation.home.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -15,18 +15,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun OnlineActionButton(
+internal fun OnlineActionButton(
     isOnline: Boolean,
     onGoOnline: () -> Unit,
     onGoOffline: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     Surface(
-        color = if (isOnline) Color(0xFFFF3B30) else Color(0xFF0A84FF),
+        color = (if (isOnline) Color(0xFFFF3B30) else Color(0xFF0A84FF))
+            .copy(alpha = if (enabled) 1f else 0.5f),
         shape = CircleShape,
         modifier = modifier
             .size(60.dp)
-            .clickable { if (isOnline) onGoOffline() else onGoOnline() }
+            .clickable(enabled = enabled) {
+                if (isOnline) onGoOffline() else onGoOnline()
+            }
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(

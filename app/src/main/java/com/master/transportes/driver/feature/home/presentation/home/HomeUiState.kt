@@ -12,6 +12,7 @@ data class HomeUiState(
     val isLocationGranted: Boolean = false,
     val isGpsEnabled: Boolean = true,
     val isOnline: Boolean = false,
+    val isChangingOnlineStatus: Boolean = false,
     val isFollowing: Boolean = true,
     val actionErrorMessage: String? = null,
 )

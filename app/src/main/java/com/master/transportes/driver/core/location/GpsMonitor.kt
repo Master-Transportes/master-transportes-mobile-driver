@@ -15,7 +15,7 @@ import javax.inject.Singleton
 
 @Singleton
 class GpsMonitor @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ){
     private val locationManager: LocationManager? = ContextCompat.getSystemService(context,
         LocationManager::class.java)

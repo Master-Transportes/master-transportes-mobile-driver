@@ -47,27 +47,43 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onGoOnline() {
+        if (_uiState.value.isChangingOnlineStatus) return
+
+        _uiState.update { it.copy(isChangingOnlineStatus = true, actionErrorMessage = null) }
+
         viewModelScope.launch {
-            when (val result = driverRepository.goOnline()) {
-                is ApiResult.Success ->
-                    _uiState.update { it.copy(isOnline = result.data) }
-                is ApiResult.Error ->
-                    _uiState.update {
-                        it.copy(actionErrorMessage = "Não foi possível ficar online. Tente novamente.")
-                    }
+            try {
+                when (val result = driverRepository.goOnline()) {
+                    is ApiResult.Success ->
+                        _uiState.update { it.copy(isOnline = result.data) }
+                    is ApiResult.Error ->
+                        _uiState.update {
+                            it.copy(actionErrorMessage = "Não foi possível ficar online. Tente novamente.")
+                        }
+                }
+            } finally {
+                _uiState.update { it.copy(isChangingOnlineStatus = false) }
             }
         }
     }
 
     fun onGoOffline() {
+        if (_uiState.value.isChangingOnlineStatus) return
+
+        _uiState.update { it.copy(isChangingOnlineStatus = true, actionErrorMessage = null) }
+
         viewModelScope.launch {
-            when (val result = driverRepository.goOffline()) {
-                is ApiResult.Success ->
-                    _uiState.update { it.copy(isOnline = result.data) }
-                is ApiResult.Error ->
-                    _uiState.update {
-                        it.copy(actionErrorMessage = "Não foi possível ficar offline. Tente novamente.")
-                    }
+            try {
+                when (val result = driverRepository.goOffline()) {
+                    is ApiResult.Success ->
+                        _uiState.update { it.copy(isOnline = result.data) }
+                    is ApiResult.Error ->
+                        _uiState.update {
+                            it.copy(actionErrorMessage = "Não foi possível ficar offline. Tente novamente.")
+                        }
+                }
+            } finally {
+                _uiState.update { it.copy(isChangingOnlineStatus = false) }
             }
         }
     }
