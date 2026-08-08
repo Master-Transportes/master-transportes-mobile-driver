@@ -18,7 +18,6 @@ internal fun BottomSection(
     onOpenLocationSettings: () -> Unit,
     onOpenAppPermissionSettings: () -> Unit,
     onGoOnline: () -> Unit,
-    onGoOffline: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -27,13 +26,12 @@ internal fun BottomSection(
             .padding(horizontal = 16.dp)
             .padding(bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+//        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         ActionArea(
             state = state,
             onToggleFollow = onToggleFollow,
-            onGoOnline = onGoOnline,
-            onGoOffline = onGoOffline
+            onGoOnline = onGoOnline
         )
 
         BannerArea(
@@ -49,14 +47,12 @@ private fun ActionArea(
     state: HomeUiState,
     onToggleFollow: () -> Unit,
     onGoOnline: () -> Unit,
-    onGoOffline: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxWidth()) {
         OnlineActionButton(
             isOnline = state.isOnline,
             onGoOnline = onGoOnline,
-            onGoOffline = onGoOffline,
             enabled = !state.isChangingOnlineStatus,
             modifier = Modifier.align(Alignment.Center)
         )

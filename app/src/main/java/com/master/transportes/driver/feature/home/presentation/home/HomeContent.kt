@@ -1,16 +1,25 @@
 ﻿package com.master.transportes.driver.feature.home.presentation.home
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -21,6 +30,7 @@ import com.master.transportes.driver.feature.home.presentation.home.components.O
 import com.master.transportes.driver.feature.home.presentation.home.map.HomeMap
 import com.master.transportes.driver.ui.theme.MasterTransportesMobileDriverTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeContent(
     state: HomeUiState,
@@ -36,6 +46,9 @@ fun HomeContent(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val scaffoldState = rememberBottomSheetScaffoldState()
+
+    val navBarInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     LaunchedEffect(state.actionErrorMessage) {
         state.actionErrorMessage?.let { message ->
@@ -44,20 +57,28 @@ fun HomeContent(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetPeekHeight = 56.dp + navBarInset,
+        sheetDragHandle = null,
+        sheetSwipeEnabled = false,
+        sheetContainerColor = MaterialTheme.colorScheme.surface,
+        sheetShape = BottomSheetDefaults.HiddenShape,
+        sheetContent = {
             OnlineStatusBar(
                 isOnline = state.isOnline,
                 onGoOnline = onGoOnline,
-                onGoOffline = onGoOffline
+                onGoOffline = onGoOffline,
+                sheetState = scaffoldState.bottomSheetState
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .statusBarsPadding()
         ) {
             HomeMap(
                 currentLocation = state.currentLocation,
@@ -70,8 +91,7 @@ fun HomeContent(
                 onToggleFollow = onToggleFollow,
                 onOpenLocationSettings = onOpenLocationSettings,
                 onOpenAppPermissionSettings = onOpenAppPermissionSettings,
-                onGoOnline = onGoOnline,
-                onGoOffline = onGoOffline
+                onGoOnline = onGoOnline
             )
         }
     }
@@ -93,7 +113,8 @@ fun HomePreview() {
                 ),
                 isOnline = false,
                 isLocationGranted = true,
-                isGpsEnabled = true
+                isGpsEnabled = true,
+                isChangingOnlineStatus = false
             )
         )
     }

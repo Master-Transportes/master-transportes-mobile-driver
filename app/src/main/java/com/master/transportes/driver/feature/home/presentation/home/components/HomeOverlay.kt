@@ -22,8 +22,7 @@ internal fun HomeOverlay(
     onOpenLocationSettings: () -> Unit,
     onOpenAppPermissionSettings: () -> Unit,
     modifier: Modifier = Modifier,
-    onGoOnline: () -> Unit,
-    onGoOffline: () -> Unit
+    onGoOnline: () -> Unit
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
@@ -45,8 +44,7 @@ internal fun HomeOverlay(
             onToggleFollow = onToggleFollow,
             onOpenLocationSettings = onOpenLocationSettings,
             onOpenAppPermissionSettings = onOpenAppPermissionSettings,
-            onGoOnline = onGoOnline,
-            onGoOffline = onGoOffline
+            onGoOnline = onGoOnline
         )
     }
 }

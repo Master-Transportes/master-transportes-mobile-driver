@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.master.transportes.driver.ui.theme.WalletGreen
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -33,7 +34,7 @@ internal fun WalletBadge(
         ) {
             Text(
                 text = "R$",
-                color = Color(0xFF00C853),
+                color = WalletGreen,
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold
                 )

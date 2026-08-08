@@ -4,12 +4,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -18,27 +18,31 @@ import androidx.compose.ui.unit.sp
 internal fun OnlineActionButton(
     isOnline: Boolean,
     onGoOnline: () -> Unit,
-    onGoOffline: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
-    Surface(
-        color = (if (isOnline) Color(0xFFFF3B30) else Color(0xFF0A84FF))
-            .copy(alpha = if (enabled) 1f else 0.5f),
-        shape = CircleShape,
-        modifier = modifier
-            .size(60.dp)
-            .clickable(enabled = enabled) {
-                if (isOnline) onGoOffline() else onGoOnline()
+    val colors = MaterialTheme.colorScheme
+    val containerColor = colors.primary
+    val contentColor = colors.onPrimary
+
+    if(!isOnline){
+        Surface(
+            color = containerColor.copy(alpha = if (enabled) 1f else 0.5f),
+            shape = CircleShape,
+            modifier = modifier
+                .size(60.dp)
+                .clickable(enabled = enabled) {
+                   onGoOnline()
+                }
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = "INICIAR",
+                    color = contentColor,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
             }
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = if (isOnline) "FINALIZAR" else "INICIAR",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
         }
     }
 }
