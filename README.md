@@ -6,9 +6,12 @@ Aplicativo Android nativo para motoristas da Master Transportes, desenvolvido co
 
 - Autenticação via JWT (Access Token + Refresh Token)
 - Gerenciamento de sessão com DataStore Preferences
-- Navegação com Bottom Navigation
-- Perfil do motorista com carregamento e tratamento de erros
-- Suporte a tema claro, escuro e Dynamic Colors (Android 12+)
+- Home com Google Maps e localização em tempo real
+- Permissões de localização e GPS com banners de orientação
+- Botão nativo de localização do Google Maps
+- Status online/offline do motorista (INICIAR / FINALIZAR) com bottom sheet expansível
+- Carteira do motorista com saldo em tempo real
+- Tema claro e escuro com cores de marca (Dynamic Colors desabilitado)
 - Tratamento centralizado de erros (`ApiResult` e `AppError`)
 
 ## Tech Stack
@@ -20,6 +23,7 @@ Aplicativo Android nativo para motoristas da Master Transportes, desenvolvido co
 | Arquitetura | MVVM + Clean Architecture |
 | Injeção de Dependência | Dagger Hilt 2.60.1 |
 | Navegação | Navigation Compose 2.9.8 |
+| Google Maps | Maps Compose 6.12.2 + Play Services Location 21.3.0 |
 | Networking | Retrofit 3 + OkHttp 5 |
 | Persistência | DataStore Preferences |
 | Concorrência | Kotlin Coroutines + Flow |
@@ -79,17 +83,22 @@ feature/auth/
 app/src/main/java/com/master/transportes/driver/
 ├── core/
 │   ├── error/
+│   ├── location/
 │   ├── network/
+│   ├── permission/
 │   ├── repository/
 │   ├── result/
 │   └── session/
 ├── di/
-├── feature/
-│   ├── activity/
 │   ├── auth/
-│   ├── home/
-│   ├── main/
-│   └── profile/
+│   ├── driver/
+│   ├── location/
+│   ├── network/
+│   └── SessionModule.kt
+├── feature/
+│   ├── auth/
+│   ├── driver/
+│   └── home/
 ├── navigation/
 ├── ui/theme/
 ├── MainActivity.kt
@@ -101,48 +110,26 @@ app/src/main/java/com/master/transportes/driver/
 # Como executar
 
 1. Clone o repositório.
-2. Abra o projeto no Android Studio.
-3. Sincronize o Gradle.
-4. Execute em um emulador ou dispositivo físico.
+2. Crie o arquivo `local.properties` na raiz com as chaves necessárias (ver [Configuração](#configuração-da-api)).
+3. Abra o projeto no Android Studio.
+4. Sincronize o Gradle.
+5. Execute em um emulador ou dispositivo físico.
 
 ---
 
 # Configuração da API
 
-Configure a URL base utilizando `buildConfigField`:
+O projeto lê as chaves de configuração do arquivo `local.properties` (na raiz do projeto):
 
-```kotlin
-defaultConfig {
-    buildConfigField(
-        "String",
-        "BASE_URL",
-        "\"https://api.exemplo.com/\""
-    )
-}
+```properties
+MAPS_API_KEY=<sua chave do Google Maps>
+BASE_URL=<url base da API>
 ```
 
-Para ambientes diferentes:
+- `MAPS_API_KEY` é injetada no manifesto do Google Maps.
+- `BASE_URL` é injetada via `buildConfigField`.
 
-```kotlin
-buildTypes {
-    debug {
-        buildConfigField("String", "BASE_URL", "\"https://dev.api.com/\"")
-    }
-
-    release {
-        buildConfigField("String", "BASE_URL", "\"https://api.com/\"")
-    }
-}
-```
-
----
-
-# Endpoints
-
-| Método | Endpoint | Descrição |
-|---------|----------|-----------|
-| POST | `access/login` | Autenticação do motorista |
-| GET | `access/me` | Dados do motorista autenticado |
+O build falha se alguma das duas estiver ausente.
 
 ---
 
