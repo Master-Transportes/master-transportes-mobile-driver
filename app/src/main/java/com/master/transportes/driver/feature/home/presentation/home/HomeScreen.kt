@@ -20,7 +20,6 @@ fun HomeScreen() {
         onGoOnline = viewModel::onGoOnline,
         onGoOffline = viewModel::onGoOffline,
         onActionErrorShown = viewModel::onActionErrorShown,
-        onToggleFollow = viewModel::onToggleFollow,
         onOpenLocationSettings = permissionHandler.onOpenLocationSettings,
         onOpenAppPermissionSettings = permissionHandler.onOpenAppPermissionSettings
     )

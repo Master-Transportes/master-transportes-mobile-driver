@@ -3,6 +3,10 @@ package com.master.transportes.driver.feature.home.presentation.home.map
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
@@ -15,14 +19,21 @@ import com.google.maps.android.compose.MapUiSettings
 @Composable
 internal fun HomeMap(
     currentLocation: LatLng?,
-    isFollowing: Boolean,
     cameraPositionState: CameraPositionState,
+    isLocationGranted: Boolean,
     modifier: Modifier = Modifier
 ) {
-    LaunchedEffect(isFollowing, currentLocation) {
-        if (isFollowing) {
+    var hasCentered by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isLocationGranted) {
+        if (isLocationGranted) hasCentered = false
+    }
+
+    LaunchedEffect(isLocationGranted, currentLocation) {
+        if (isLocationGranted && !hasCentered) {
             currentLocation?.let {
                 cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(it, 16f))
+                hasCentered = true
             }
         }
     }
@@ -33,13 +44,13 @@ internal fun HomeMap(
 
         properties = MapProperties(
             mapType = MapType.NORMAL,                // mapa de ruas padrão (não satélite)
-            isMyLocationEnabled = true,              // pontinho azul no mapa
+            isMyLocationEnabled = isLocationGranted, // pontinho azul só se tiver permissão
             isTrafficEnabled = true,                 // linhas de trânsito ao vivo (verde/amarelo/vermelho)
         ),
 
         uiSettings = MapUiSettings(
             zoomControlsEnabled = false,             // esconde botões +/− fixos
-            myLocationButtonEnabled = false,         // esconde botão "me localizar" do Google (já tem FAB próprio)
+            myLocationButtonEnabled = isLocationGranted, // botão nativo só se tiver permissão
             compassEnabled = true,                   // bússola no canto superior
             mapToolbarEnabled = false,               // evita abrir Google Maps externo ao tocar em marcador
             tiltGesturesEnabled = true,              // permite inclinar o mapa com 2 dedos (visão 3D)

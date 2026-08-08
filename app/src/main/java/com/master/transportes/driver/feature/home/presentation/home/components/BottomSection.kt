@@ -14,7 +14,6 @@ import com.master.transportes.driver.feature.home.presentation.home.HomeUiState
 @Composable
 internal fun BottomSection(
     state: HomeUiState,
-    onToggleFollow: () -> Unit,
     onOpenLocationSettings: () -> Unit,
     onOpenAppPermissionSettings: () -> Unit,
     onGoOnline: () -> Unit,
@@ -25,12 +24,10 @@ internal fun BottomSection(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .padding(bottom = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-//        verticalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         ActionArea(
             state = state,
-            onToggleFollow = onToggleFollow,
             onGoOnline = onGoOnline
         )
 
@@ -45,7 +42,6 @@ internal fun BottomSection(
 @Composable
 private fun ActionArea(
     state: HomeUiState,
-    onToggleFollow: () -> Unit,
     onGoOnline: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -56,14 +52,6 @@ private fun ActionArea(
             enabled = !state.isChangingOnlineStatus,
             modifier = Modifier.align(Alignment.Center)
         )
-
-        if (state.isLocationGranted) {
-            FollowLocationFab(
-                isFollowing = state.isFollowing,
-                onClick = onToggleFollow,
-                modifier = Modifier.align(Alignment.CenterEnd)
-            )
-        }
     }
 }
 

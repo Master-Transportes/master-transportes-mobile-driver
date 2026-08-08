@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.master.transportes.driver.core.error.AppError
 import com.master.transportes.driver.feature.home.presentation.home.HomeUiState
@@ -18,14 +19,16 @@ import com.master.transportes.driver.feature.home.presentation.home.HomeUiState
 @Composable
 internal fun HomeOverlay(
     state: HomeUiState,
-    onToggleFollow: () -> Unit,
     onOpenLocationSettings: () -> Unit,
     onOpenAppPermissionSettings: () -> Unit,
     modifier: Modifier = Modifier,
-    onGoOnline: () -> Unit
+    onGoOnline: () -> Unit,
+    bottomOffset: Dp = 0.dp
 ) {
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(bottom = bottomOffset),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         TopSection(
@@ -41,7 +44,6 @@ internal fun HomeOverlay(
 
         BottomSection(
             state = state,
-            onToggleFollow = onToggleFollow,
             onOpenLocationSettings = onOpenLocationSettings,
             onOpenAppPermissionSettings = onOpenAppPermissionSettings,
             onGoOnline = onGoOnline

@@ -8,10 +8,13 @@ import com.master.transportes.driver.core.location.LocationProvider
 import com.master.transportes.driver.core.result.ApiResult
 import com.master.transportes.driver.feature.driver.domain.repository.DriverRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,12 +29,11 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private var locationJob: Job? = null
-
     init {
         loadDriver()
         observeGps()
         loadStatus()
+        observeLocation()
     }
 
     private fun loadDriver() {
@@ -92,10 +94,6 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(actionErrorMessage = null) }
     }
 
-    fun onToggleFollow() {
-        _uiState.update { it.copy(isFollowing = !it.isFollowing) }
-    }
-
     private fun loadStatus(){
         viewModelScope.launch {
             when (val result = driverRepository.getStatus()) {
@@ -116,26 +114,20 @@ class HomeViewModel @Inject constructor(
 
     fun onLocationPermissionResult(granted: Boolean) {
         _uiState.update { it.copy(isLocationGranted = granted) }
-        if (granted) startCollectingLocation() else stopCollectingLocation()
     }
 
-    private fun startCollectingLocation() {
-        locationJob?.cancel()
-        locationJob = viewModelScope.launch {
-            locationProvider.locationUpdates.collect { location: LatLng ->
-                _uiState.update { it.copy(currentLocation = location) }
-            }
+    private fun observeLocation() {
+        viewModelScope.launch {
+            _uiState
+                .map { it.isLocationGranted }
+                .distinctUntilChanged()
+                .flatMapLatest { granted ->
+                    if (granted) locationProvider.locationUpdates else emptyFlow()
+                }
+                .collect { location: LatLng ->
+                    _uiState.update { it.copy(currentLocation = location) }
+                }
         }
-    }
-
-    private fun stopCollectingLocation() {
-        locationJob?.cancel()
-        locationJob = null
-    }
-
-    override fun onCleared() {
-        locationJob?.cancel()
-        super.onCleared()
     }
 
 }

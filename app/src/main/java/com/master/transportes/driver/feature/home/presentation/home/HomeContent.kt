@@ -16,8 +16,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.CameraPosition
@@ -38,7 +41,6 @@ fun HomeContent(
     onOpenAppPermissionSettings: () -> Unit = {},
     onGoOnline: () -> Unit = {},
     onGoOffline: () -> Unit = {},
-    onToggleFollow: () -> Unit = {},
     onActionErrorShown: () -> Unit = {}
 ) {
     val cameraPositionState = rememberCameraPositionState {
@@ -49,6 +51,19 @@ fun HomeContent(
     val scaffoldState = rememberBottomSheetScaffoldState()
 
     val navBarInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
+    val density = LocalDensity.current
+    val windowHeightPx = LocalWindowInfo.current.containerSize.height
+    val peekHeightPx = with(density) { (56.dp + navBarInset).toPx() }
+    val sheetOffsetPx = remember {
+        derivedStateOf {
+            runCatching { scaffoldState.bottomSheetState.requireOffset() }
+                .getOrNull() ?: (windowHeightPx - peekHeightPx)
+        }
+    }.value
+    val overlayExtraOffset = with(density) {
+        (windowHeightPx - sheetOffsetPx - peekHeightPx).coerceAtLeast(0f).toDp()
+    }
 
     LaunchedEffect(state.actionErrorMessage) {
         state.actionErrorMessage?.let { message ->
@@ -67,7 +82,6 @@ fun HomeContent(
         sheetContent = {
             OnlineStatusBar(
                 isOnline = state.isOnline,
-                onGoOnline = onGoOnline,
                 onGoOffline = onGoOffline,
                 sheetState = scaffoldState.bottomSheetState
             )
@@ -82,16 +96,16 @@ fun HomeContent(
         ) {
             HomeMap(
                 currentLocation = state.currentLocation,
-                isFollowing = state.isFollowing,
-                cameraPositionState = cameraPositionState
+                cameraPositionState = cameraPositionState,
+                isLocationGranted = state.isLocationGranted
             )
 
             HomeOverlay(
                 state = state,
-                onToggleFollow = onToggleFollow,
                 onOpenLocationSettings = onOpenLocationSettings,
                 onOpenAppPermissionSettings = onOpenAppPermissionSettings,
-                onGoOnline = onGoOnline
+                onGoOnline = onGoOnline,
+                bottomOffset = overlayExtraOffset
             )
         }
     }

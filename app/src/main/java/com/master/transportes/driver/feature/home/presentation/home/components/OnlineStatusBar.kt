@@ -1,12 +1,14 @@
 package com.master.transportes.driver.feature.home.presentation.home.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.outlined.Tune
@@ -20,6 +22,7 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,12 +36,12 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun OnlineStatusBar(
     isOnline: Boolean,
-    onGoOnline: () -> Unit,
     onGoOffline: () -> Unit,
     sheetState: SheetState,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
+    val interactionSource = remember { MutableInteractionSource() }
     val colors = MaterialTheme.colorScheme
     Column(modifier = modifier.fillMaxWidth()) {
         Surface(
@@ -48,14 +51,19 @@ internal fun OnlineStatusBar(
                 .height(56.dp)
         ) {
             Box {
-                Icon(
-                    imageVector = Icons.Outlined.Tune,
-                    contentDescription = "Ajustes",
-                    tint = Color.White,
+                Box(
                     modifier = Modifier
                         .align(Alignment.CenterStart)
                         .padding(start = 16.dp)
-                )
+                        .size(48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Tune,
+                        contentDescription = "Ajustes",
+                        tint = Color.White
+                    )
+                }
 
                 Text(
                     text = if (isOnline) "Você está online" else "Você está offline",
@@ -65,14 +73,15 @@ internal fun OnlineStatusBar(
                     color = Color.White
                 )
 
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ViewList,
-                    contentDescription = "Lista",
-                    tint = Color.White,
+                Box(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .padding(end = 16.dp)
-                        .clickable {
+                        .size(48.dp)
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null
+                        ) {
                             scope.launch {
                                 if (sheetState.currentValue == SheetValue.Expanded) {
                                     sheetState.partialExpand()
@@ -80,8 +89,15 @@ internal fun OnlineStatusBar(
                                     sheetState.expand()
                                 }
                             }
-                        }
-                )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ViewList,
+                        contentDescription = "Lista",
+                        tint = Color.White
+                    )
+                }
             }
         }
 
