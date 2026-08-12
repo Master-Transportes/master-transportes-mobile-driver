@@ -2,16 +2,17 @@
 
 import com.master.transportes.driver.core.error.ErrorMapper
 import com.master.transportes.driver.core.result.ApiResult
+import kotlinx.coroutines.CancellationException
 
 /**
- * Todo Repository que chama a API pode lanÃ§ar exceÃ§Ãµes.
+ * Todo Repository que chama a API pode lançar exceções.
  *
  * safeApiCall centraliza o try/catch para que cada RepositoryImpl
- * nÃ£o precise repetir esse bloco. Toda exceÃ§Ã£o passa pelo ErrorMapper
- * e Ã© convertida em AppError antes de chegar ao ViewModel.
+ * não precise repetir esse bloco. Toda exceção passa pelo ErrorMapper
+ * e é convertida em AppError antes de chegar ao ViewModel.
  *
- * O mÃ©todo Ã© protected porque sÃ³ as implementaÃ§Ãµes de Repository
- * (dentro de feature/{feature}/data/repository/) devem chamÃ¡-lo.
+ * O método é protected porque só as implementações de Repository
+ * (dentro de feature/{feature}/data/repository/) devem chamá-lo.
  */
 abstract class BaseRepository {
 
@@ -19,6 +20,8 @@ abstract class BaseRepository {
         apiCall: suspend () -> T
     ): ApiResult<T> = try {
         ApiResult.Success(apiCall())
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         ApiResult.Error(
             error = ErrorMapper.map(e)

@@ -23,7 +23,13 @@ class TokenAuthenticator @Inject constructor(
     @param:Named("refreshAuthApi") private val authApi: AuthApi
 ) : Authenticator {
 
+    companion object {
+        private const val REFRESH_FAILURE_COOLDOWN_MS = 2_000L
+    }
+
     private val refreshMutex = Mutex()
+
+    private var lastRefreshAttemptFailedAt: Long = 0L
 
     override fun authenticate(route: Route?, response: Response): Request? {
         val failedRequest = response.request
@@ -32,16 +38,19 @@ class TokenAuthenticator @Inject constructor(
         if (failedRequest.isRefreshRequest()) return null
 
         // Guard 2: sem refresh token salvo, não há o que renovar.
-        // Não limpa a sessão aqui — o 401 será reportado ao chamador.
         val refreshToken = sessionManager.getRefreshToken() ?: return null
 
         val refreshed = runBlocking {
             refreshMutex.withLock {
-                // Se outro thread já renovou o token, apenas reencaminha.
-                if (sessionManager.getToken() == failedRequest.bearerToken()) {
-                    refreshSession(refreshToken)
-                } else {
-                    true
+                when {
+                    // Outro thread já renovou o token: apenas reencaminha.
+                    sessionManager.getToken() != failedRequest.bearerToken() -> true
+
+                    // Refresh acabou de falhar para este mesmo token: evita
+                    // N tentativas sequenciais no mesmo burst.
+                    System.currentTimeMillis() - lastRefreshAttemptFailedAt < REFRESH_FAILURE_COOLDOWN_MS -> false
+
+                    else -> refreshSession(refreshToken)
                 }
             }
         }
@@ -66,18 +75,20 @@ class TokenAuthenticator @Inject constructor(
                     sessionId = sessionId
                 )
             )
+            lastRefreshAttemptFailedAt = 0L
             sessionManager.saveSession(tokens.toDomain())
             true
         } catch (e: HttpException) {
-            // Só um 401 indica sessão inválida/inexistente → logout.
+            lastRefreshAttemptFailedAt = System.currentTimeMillis()
             if (e.code() == 401) {
                 sessionManager.clearSession()
             }
             false
         } catch (e: IOException) {
-            // Falha de rede/timeout: preserva o login, tenta na próxima request.
+            lastRefreshAttemptFailedAt = System.currentTimeMillis()
             false
         } catch (e: Exception) {
+            lastRefreshAttemptFailedAt = System.currentTimeMillis()
             sessionManager.clearSession()
             false
         }
