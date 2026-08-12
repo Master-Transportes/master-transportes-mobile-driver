@@ -2,6 +2,7 @@
 
 import com.master.transportes.driver.feature.auth.data.dto.LoginRequestDto
 import com.master.transportes.driver.feature.auth.data.dto.LoginResponseDto
+import com.master.transportes.driver.feature.auth.data.dto.RefreshRequestDto
 import retrofit2.http.Body
 import retrofit2.http.POST
 
@@ -10,6 +11,11 @@ interface AuthApi {
     @POST("driver/login")
     suspend fun login(
         @Body body: LoginRequestDto
+    ): LoginResponseDto
+
+    @POST("driver/refresh")
+    suspend fun refresh(
+        @Body body: RefreshRequestDto
     ): LoginResponseDto
 
 }

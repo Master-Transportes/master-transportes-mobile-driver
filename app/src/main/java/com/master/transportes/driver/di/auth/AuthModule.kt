@@ -6,6 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -15,6 +16,15 @@ object AuthModule {
     @Provides
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi {
+        return retrofit.create(AuthApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @Named("refreshAuthApi")
+    fun provideRefreshAuthApi(
+        @Named("refreshRetrofit") retrofit: Retrofit
+    ): AuthApi {
         return retrofit.create(AuthApi::class.java)
     }
 }

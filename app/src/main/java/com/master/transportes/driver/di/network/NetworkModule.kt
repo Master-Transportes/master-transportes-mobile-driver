@@ -3,6 +3,7 @@
 import com.google.gson.Gson
 import com.master.transportes.driver.BuildConfig
 import com.master.transportes.driver.core.network.AuthInterceptor
+import com.master.transportes.driver.core.network.TokenAuthenticator
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -11,6 +12,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -37,8 +39,38 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @Named("refreshOkHttpClient")
+    fun provideRefreshOkHttpClient(
+        loggingInterceptor: HttpLoggingInterceptor
+    ): OkHttpClient {
+        return OkHttpClient.Builder()
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(loggingInterceptor)
+                }
+            }
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    @Named("refreshRetrofit")
+    fun provideRefreshRetrofit(
+        gson: Gson,
+        @Named("refreshOkHttpClient") refreshOkHttpClient: OkHttpClient
+    ): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.BASE_URL)
+            .client(refreshOkHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+    }
+
+    @Provides
+    @Singleton
     fun provideOkHttpClient(
         authInterceptor: AuthInterceptor,
+        tokenAuthenticator: TokenAuthenticator,
         loggingInterceptor: HttpLoggingInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
@@ -48,6 +80,7 @@ object NetworkModule {
                     addInterceptor(loggingInterceptor)
                 }
             }
+            .authenticator(tokenAuthenticator)
             .build()
     }
 

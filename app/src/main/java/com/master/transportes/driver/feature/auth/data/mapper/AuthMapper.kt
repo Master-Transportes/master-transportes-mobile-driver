@@ -6,6 +6,8 @@ import com.master.transportes.driver.core.session.Session
 fun LoginResponseDto.toDomain(): Session {
     return Session(
         token = accessToken,
+        refreshToken = refreshToken,
+        sessionId = sessionId,
         expiresIn = expiresIn.toLong()
     )
 }
