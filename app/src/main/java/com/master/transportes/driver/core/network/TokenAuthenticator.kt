@@ -31,6 +31,8 @@ class TokenAuthenticator @Inject constructor(
 
     private var lastRefreshAttemptFailedAt: Long = 0L
 
+    private object RefreshRetryTag
+
     override fun authenticate(route: Route?, response: Response): Request? {
         val failedRequest = response.request
 
@@ -40,9 +42,18 @@ class TokenAuthenticator @Inject constructor(
         // Guard 2: sem refresh token salvo, não há o que renovar.
         val refreshToken = sessionManager.getRefreshToken() ?: return null
 
+        var shouldTag = false
+
         val refreshed = runBlocking {
             refreshMutex.withLock {
                 when {
+                    // A request marcada voltou a receber 401 após o refresh:
+                    // sessão morta, logout.
+                    failedRequest.tag(RefreshRetryTag::class.java) != null -> {
+                        sessionManager.clearSession()
+                        false
+                    }
+
                     // Outro thread já renovou o token: apenas reencaminha.
                     sessionManager.getToken() != failedRequest.bearerToken() -> true
 
@@ -50,7 +61,13 @@ class TokenAuthenticator @Inject constructor(
                     // N tentativas sequenciais no mesmo burst.
                     System.currentTimeMillis() - lastRefreshAttemptFailedAt < REFRESH_FAILURE_COOLDOWN_MS -> false
 
-                    else -> refreshSession(refreshToken)
+                    else -> {
+                        val success = refreshSession(refreshToken)
+                        if (success) {
+                            shouldTag = true
+                        }
+                        success
+                    }
                 }
             }
         }
@@ -63,6 +80,11 @@ class TokenAuthenticator @Inject constructor(
         // não rodam de novo no retry disparado pelo Authenticator.
         return failedRequest.newBuilder()
             .header("Authorization", "Bearer $currentToken")
+            .apply {
+                if (shouldTag) {
+                    tag(RefreshRetryTag::class.java, RefreshRetryTag)
+                }
+            }
             .build()
     }
 
