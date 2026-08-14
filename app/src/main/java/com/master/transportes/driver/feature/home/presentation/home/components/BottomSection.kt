@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.master.transportes.driver.core.error.AppError
 import com.master.transportes.driver.feature.home.presentation.home.HomeUiState
 
 @Composable
@@ -17,6 +18,7 @@ internal fun BottomSection(
     onOpenLocationSettings: () -> Unit,
     onOpenAppPermissionSettings: () -> Unit,
     onGoOnline: () -> Unit,
+    onRetryLoadStatus: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -34,7 +36,8 @@ internal fun BottomSection(
         BannerArea(
             state = state,
             onOpenLocationSettings = onOpenLocationSettings,
-            onOpenAppPermissionSettings = onOpenAppPermissionSettings
+            onOpenAppPermissionSettings = onOpenAppPermissionSettings,
+            onRetryLoadStatus = onRetryLoadStatus
         )
     }
 }
@@ -59,12 +62,20 @@ private fun ActionArea(
 private fun BannerArea(
     state: HomeUiState,
     onOpenLocationSettings: () -> Unit,
-    onOpenAppPermissionSettings: () -> Unit
+    onOpenAppPermissionSettings: () -> Unit,
+    onRetryLoadStatus: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        state.statusError?.let { error ->
+            StatusErrorBanner(
+                message = statusErrorMessage(error),
+                onRetry = onRetryLoadStatus
+            )
+        }
+
         if (!state.isLocationGranted) {
             PermissionBanner(onClick = onOpenAppPermissionSettings)
         }
@@ -73,4 +84,11 @@ private fun BannerArea(
             GpsBanner(onClick = onOpenLocationSettings)
         }
     }
+}
+
+private fun statusErrorMessage(error: AppError): String = when (error) {
+    is AppError.Api -> error.message
+    is AppError.Network, is AppError.Timeout, is AppError.SSL ->
+        "Sem conexão com a internet."
+    else -> "Erro inesperado. Tente novamente."
 }

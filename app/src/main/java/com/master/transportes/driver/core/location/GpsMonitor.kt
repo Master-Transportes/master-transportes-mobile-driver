@@ -17,8 +17,10 @@ import javax.inject.Singleton
 class GpsMonitor @Inject constructor(
     @param:ApplicationContext private val context: Context
 ){
-    private val locationManager: LocationManager? = ContextCompat.getSystemService(context,
-        LocationManager::class.java)
+    private val locationManager: LocationManager? = ContextCompat.getSystemService(
+        context,
+        LocationManager::class.java
+    )
 
     private val _isGpsEnabled: MutableStateFlow<Boolean> = MutableStateFlow(
         locationManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) ?: false
@@ -29,16 +31,18 @@ class GpsMonitor @Inject constructor(
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == LocationManager.PROVIDERS_CHANGED_ACTION) {
-                _isGpsEnabled.value =
-                    locationManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) ?: false
+                _isGpsEnabled.value = locationManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) ?: false
             }
         }
     }
 
     init {
-        context.registerReceiver(
+        // é uma classe utilitária do Android que permite usar recursos da classe Context de forma compatível com versões antigas do sistema
+        ContextCompat.registerReceiver(
+            context,
             receiver,
-            IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION)
+            IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION),
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
     }
 

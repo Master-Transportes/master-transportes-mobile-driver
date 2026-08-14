@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.master.transportes.driver.core.error.AppError
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,17 +40,43 @@ class SessionManager @Inject constructor(
     @Volatile
     private var sessionId: String? = null
 
-    private val _isLoggedIn = MutableStateFlow(false)
-    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
+    private val _sessionState = MutableStateFlow<SessionState>(SessionState.Loading);
+
+    val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
 
     init {
         CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
-            val prefs = dataStore.data.first()
-            val token = prefs[TOKEN_KEY]
-            _token.value = token
-            refreshToken = prefs[REFRESH_TOKEN_KEY]
-            sessionId = prefs[SESSION_ID_KEY]
-            _isLoggedIn.value = token != null
+            try{
+                val prefs = dataStore.data.first()
+                val token = prefs[TOKEN_KEY]
+                val savedRefreshToken = prefs[REFRESH_TOKEN_KEY]
+                val savedSessionId = prefs[SESSION_ID_KEY]
+                val savedExpiresIn = prefs[EXPIRES_IN_KEY] ?: 0L
+
+                _token.value = token
+                refreshToken = savedRefreshToken
+                sessionId = savedSessionId
+
+                _sessionState.value =
+                    if (token != null && savedRefreshToken != null && savedSessionId != null) {
+                        SessionState.Authenticated(
+                            Session(
+                                token = token,
+                                refreshToken = savedRefreshToken,
+                                sessionId = savedSessionId,
+                                expiresIn = savedExpiresIn
+                            )
+                        )
+                    } else {
+                        SessionState.Unauthenticated
+                    }
+
+            } catch (e: CancellationException) {
+                throw e
+            }
+            catch (e: Exception) {
+                _sessionState.value = SessionState.Unauthenticated
+            }
         }
     }
 
@@ -63,7 +90,7 @@ class SessionManager @Inject constructor(
         _token.value = session.token
         refreshToken = session.refreshToken
         sessionId = session.sessionId
-        _isLoggedIn.value = true
+        _sessionState.value = SessionState.Authenticated(session)
         dataStore.edit { prefs ->
             prefs[TOKEN_KEY] = session.token
             prefs[REFRESH_TOKEN_KEY] = session.refreshToken
@@ -76,7 +103,7 @@ class SessionManager @Inject constructor(
         _token.value = null
         refreshToken = null
         sessionId = null
-        _isLoggedIn.value = false
+        _sessionState.value = SessionState.Unauthenticated
         dataStore.edit { prefs ->
             prefs.remove(TOKEN_KEY)
             prefs.remove(REFRESH_TOKEN_KEY)
@@ -92,7 +119,7 @@ class SessionManager @Inject constructor(
      * @return true se a sessão foi limpa, false caso contrário.
      */
     suspend fun handleSessionExpired(error: AppError): Boolean {
-        if (error is AppError.Api && error.code in SESSION_DEAD_CODES && _isLoggedIn.value) {
+        if (error is AppError.Api && error.code in SESSION_DEAD_CODES && _sessionState.value is SessionState.Authenticated) {
             clearSession()
             return true
         }

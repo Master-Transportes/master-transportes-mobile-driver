@@ -3,9 +3,9 @@
 import com.master.transportes.driver.core.error.AppError
 
 /**
- * Wrapper que substitui exceÃ§Ãµes no fluxo normal da aplicaÃ§Ã£o.
+ * Wrapper que substitui exceções no fluxo normal da aplicação.
  *
- * Um Repository nunca lanÃ§a Exception para o ViewModel â€” isso
+ * Um Repository nunca lança Exception para o ViewModel — isso
  * quebraria o StateFlow e obrigaria try/catch em cada chamada.
  *
  * Em vez disso, o Repository retorna:
@@ -13,7 +13,7 @@ import com.master.transportes.driver.core.error.AppError
  *   - ApiResult.Error  com um AppError tipado.
  *
  * O ViewModel usa when para tratar cada caso sem nunca precisar
- * capturar exceÃ§Ãµes.
+ * capturar exceções.
  */
 sealed class ApiResult<out T> {
 

@@ -2,48 +2,49 @@
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.master.transportes.driver.core.session.SessionManager
+import com.master.transportes.driver.core.session.SessionState
 import com.master.transportes.driver.feature.auth.presentation.login.LoginScreen
 import com.master.transportes.driver.feature.home.presentation.home.HomeScreen
 
 @Composable
 fun AppNavigation(sessionManager: SessionManager) {
     val navController = rememberNavController()
-    val isLoggedIn by sessionManager.isLoggedIn.collectAsStateWithLifecycle()
-    var startAssigned by remember { mutableStateOf(false) }
+    val sessionState by sessionManager.sessionState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(isLoggedIn) {
-        if (!startAssigned) {
-            startAssigned = true
-            if (isLoggedIn) {
-                navController.navigate(Routes.Home.route) {
-                    popUpTo(Routes.Login.route) { inclusive = true }
-                }
-            }
-        } else if (!isLoggedIn) {
-            navController.navigate(Routes.Login.route) {
-                popUpTo(0) { inclusive = true }
-            }
+    if (sessionState is SessionState.Loading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
         }
+        return
     }
+
+    val startDestination =
+        if (sessionState is SessionState.Authenticated) Routes.Home.route
+        else Routes.Login.route
 
     NavHost(
         navController = navController,
-        startDestination = Routes.Login.route,
+        startDestination = startDestination,
         enterTransition = { EnterTransition.None },
         exitTransition = { ExitTransition.None },
         popEnterTransition = { EnterTransition.None },
-        popExitTransition = { ExitTransition.None }
+        popExitTransition = { ExitTransition.None },
     ) {
         composable(Routes.Login.route) {
             LoginScreen(
@@ -58,4 +59,18 @@ fun AppNavigation(sessionManager: SessionManager) {
             HomeScreen()
         }
     }
+
+    // Logout/sessão expirada: volta para Login.
+    LaunchedEffect(sessionState) {
+        if (sessionState is SessionState.Unauthenticated &&
+            navController.currentDestination?.route != Routes.Login.route
+        ) {
+            navController.navigate(Routes.Login.route) {
+                popUpTo(navController.graph.id) {
+                    inclusive = true
+                }
+            }
+        }
+    }
+
 }

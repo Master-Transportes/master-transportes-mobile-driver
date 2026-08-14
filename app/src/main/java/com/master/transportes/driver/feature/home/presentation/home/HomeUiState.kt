@@ -8,6 +8,7 @@ data class HomeUiState(
     val driver: Driver? = null,
     val isLoading: Boolean = false,
     val error: AppError? = null,
+    val statusError: AppError? = null,
     val currentLocation: LatLng? = null,
     val isLocationGranted: Boolean = false,
     val isGpsEnabled: Boolean = true,

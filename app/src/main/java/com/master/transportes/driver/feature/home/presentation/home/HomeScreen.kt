@@ -20,6 +20,8 @@ fun HomeScreen() {
         onGoOnline = viewModel::onGoOnline,
         onGoOffline = viewModel::onGoOffline,
         onActionErrorShown = viewModel::onActionErrorShown,
+        onRetryLoadDriver = viewModel::retryLoadDriver,
+        onRetryLoadStatus = viewModel::retryLoadStatus,
         onOpenLocationSettings = permissionHandler.onOpenLocationSettings,
         onOpenAppPermissionSettings = permissionHandler.onOpenAppPermissionSettings
     )

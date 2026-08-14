@@ -52,7 +52,7 @@ internal fun WalletBadge(
 }
 
 private fun formatBalance(balanceInCents: Long): String {
-    val formatter = NumberFormat.getNumberInstance(Locale("pt", "BR")).apply {
+    val formatter = NumberFormat.getNumberInstance(Locale.forLanguageTag("pt-BR")).apply {
         minimumFractionDigits = 2
         maximumFractionDigits = 2
     }

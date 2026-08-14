@@ -48,6 +48,10 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun retryLoadDriver() {
+        loadDriver()
+    }
+
     fun onGoOnline() {
         if (_uiState.value.isChangingOnlineStatus) return
 
@@ -96,12 +100,18 @@ class HomeViewModel @Inject constructor(
 
     private fun loadStatus(){
         viewModelScope.launch {
+            _uiState.update { it.copy(statusError = null) }
             when (val result = driverRepository.getStatus()) {
                 is ApiResult.Success ->
                     _uiState.update { it.copy(isOnline = result.data) }
-                is ApiResult.Error -> Unit
+                is ApiResult.Error ->
+                    _uiState.update { it.copy(statusError = result.error) }
             }
         }
+    }
+
+    fun retryLoadStatus() {
+        loadStatus()
     }
 
     private fun observeGps() {

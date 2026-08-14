@@ -6,8 +6,8 @@ import com.google.gson.annotations.SerializedName
  * DTO que representa exatamente o JSON de erro retornado pelo backend.
  *
  * O ErrorMapper desserializa o errorBody() das HttpException para
- * este modelo. Manter a estrutura idÃªntica ao contrato da API garante
- * que nenhuma informaÃ§Ã£o enviada pelo backend seja descartada.
+ * este modelo. Manter a estrutura idêntica ao contrato da API garante
+ * que nenhuma informação enviada pelo backend seja descartada.
  */
 data class ApiErrorResponse(
     val code: String,

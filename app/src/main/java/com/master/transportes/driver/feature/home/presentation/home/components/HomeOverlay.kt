@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,6 +24,8 @@ internal fun HomeOverlay(
     onOpenAppPermissionSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onGoOnline: () -> Unit,
+    onRetryLoadDriver: () -> Unit,
+    onRetryLoadStatus: () -> Unit,
     bottomOffset: Dp = 0.dp
 ) {
     Column(
@@ -33,6 +36,7 @@ internal fun HomeOverlay(
     ) {
         TopSection(
             state = state,
+            onRetryLoadDriver = onRetryLoadDriver,
             modifier = Modifier.padding(top = 16.dp)
         )
 
@@ -46,7 +50,8 @@ internal fun HomeOverlay(
             state = state,
             onOpenLocationSettings = onOpenLocationSettings,
             onOpenAppPermissionSettings = onOpenAppPermissionSettings,
-            onGoOnline = onGoOnline
+            onGoOnline = onGoOnline,
+            onRetryLoadStatus = onRetryLoadStatus
         )
     }
 }
@@ -54,6 +59,7 @@ internal fun HomeOverlay(
 @Composable
 private fun TopSection(
     state: HomeUiState,
+    onRetryLoadDriver: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -71,7 +77,15 @@ private fun TopSection(
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyLarge
             )
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = onRetryLoadDriver,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            ) {
+                Text("Tentar novamente")
+            }
         }
+
     }
 }
 
