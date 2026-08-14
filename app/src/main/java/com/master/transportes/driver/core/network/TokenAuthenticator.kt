@@ -1,5 +1,7 @@
 package com.master.transportes.driver.core.network
 
+import com.master.transportes.driver.core.error.AppError
+import com.master.transportes.driver.core.error.ErrorMapper
 import com.master.transportes.driver.core.session.SessionManager
 import com.master.transportes.driver.feature.auth.data.api.AuthApi
 import com.master.transportes.driver.feature.auth.data.dto.RefreshRequestDto
@@ -102,16 +104,14 @@ class TokenAuthenticator @Inject constructor(
             true
         } catch (e: HttpException) {
             lastRefreshAttemptFailedAt = System.currentTimeMillis()
-            if (e.code() == 401) {
-                sessionManager.clearSession()
-            }
+            val appError: AppError = ErrorMapper.map(e)
+            sessionManager.handleSessionExpired(appError)
             false
         } catch (e: IOException) {
             lastRefreshAttemptFailedAt = System.currentTimeMillis()
             false
         } catch (e: Exception) {
             lastRefreshAttemptFailedAt = System.currentTimeMillis()
-            sessionManager.clearSession()
             false
         }
     }

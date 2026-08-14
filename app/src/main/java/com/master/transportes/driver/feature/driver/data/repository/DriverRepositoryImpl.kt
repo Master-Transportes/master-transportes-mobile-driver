@@ -6,11 +6,13 @@ import com.master.transportes.driver.feature.driver.data.datasource.DriverRemote
 import com.master.transportes.driver.feature.driver.data.mapper.toDomain
 import com.master.transportes.driver.feature.driver.domain.model.Driver
 import com.master.transportes.driver.feature.driver.domain.repository.DriverRepository
+import com.master.transportes.driver.core.session.SessionManager
 import javax.inject.Inject
 
 class DriverRepositoryImpl @Inject constructor(
-    private val remote: DriverRemoteDataSource
-) : BaseRepository(), DriverRepository {
+    private val remote: DriverRemoteDataSource,
+    sessionManager: SessionManager
+) : BaseRepository(sessionManager), DriverRepository {
 
     override suspend fun getMe(): ApiResult<Driver> = safeApiCall {
         remote.getMe().toDomain()

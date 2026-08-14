@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.master.transportes.driver.core.error.AppError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,6 +26,9 @@ class SessionManager @Inject constructor(
         private val REFRESH_TOKEN_KEY = stringPreferencesKey("refresh_token")
         private val SESSION_ID_KEY = stringPreferencesKey("session_id")
         private val EXPIRES_IN_KEY = longPreferencesKey("expires_in")
+
+        // Códigos de erro que indicam sessão inválida/morta.
+        private val SESSION_DEAD_CODES = setOf("not_found", "unauthenticated")
     }
 
     private val _token = MutableStateFlow<String?>(null)
@@ -79,5 +83,19 @@ class SessionManager @Inject constructor(
             prefs.remove(SESSION_ID_KEY)
             prefs.remove(EXPIRES_IN_KEY)
         }
+    }
+
+    /**
+     * Verifica se o erro indica que a sessão não é mais válida
+     * e, se for o caso, limpa a sessão.
+     *
+     * @return true se a sessão foi limpa, false caso contrário.
+     */
+    suspend fun handleSessionExpired(error: AppError): Boolean {
+        if (error is AppError.Api && error.code in SESSION_DEAD_CODES && _isLoggedIn.value) {
+            clearSession()
+            return true
+        }
+        return false
     }
 }

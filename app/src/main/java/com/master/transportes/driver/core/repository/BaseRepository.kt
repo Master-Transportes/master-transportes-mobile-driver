@@ -2,6 +2,7 @@
 
 import com.master.transportes.driver.core.error.ErrorMapper
 import com.master.transportes.driver.core.result.ApiResult
+import com.master.transportes.driver.core.session.SessionManager
 import kotlinx.coroutines.CancellationException
 
 /**
@@ -14,7 +15,9 @@ import kotlinx.coroutines.CancellationException
  * O método é protected porque só as implementações de Repository
  * (dentro de feature/{feature}/data/repository/) devem chamá-lo.
  */
-abstract class BaseRepository {
+abstract class BaseRepository(
+    private val sessionManager: SessionManager
+) {
 
     protected suspend fun <T> safeApiCall(
         apiCall: suspend () -> T
@@ -23,8 +26,8 @@ abstract class BaseRepository {
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
-        ApiResult.Error(
-            error = ErrorMapper.map(e)
-        )
+        val error = ErrorMapper.map(e)
+        sessionManager.handleSessionExpired(error)
+        ApiResult.Error(error)
     }
 }
