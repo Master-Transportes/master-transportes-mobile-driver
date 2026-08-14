@@ -8,6 +8,6 @@ fun LoginResponseDto.toDomain(): Session {
         token = accessToken,
         refreshToken = refreshToken,
         sessionId = sessionId,
-        expiresIn = expiresIn.toLong()
+        expiresIn = expiresIn
     )
 }

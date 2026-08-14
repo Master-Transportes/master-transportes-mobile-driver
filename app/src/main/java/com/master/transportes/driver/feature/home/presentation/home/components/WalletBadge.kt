@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.master.transportes.driver.ui.theme.WalletGreen
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.abs
 
 @Composable
 internal fun WalletBadge(
@@ -52,9 +53,11 @@ internal fun WalletBadge(
 }
 
 private fun formatBalance(balanceInCents: Long): String {
-    val formatter = NumberFormat.getNumberInstance(Locale.forLanguageTag("pt-BR")).apply {
-        minimumFractionDigits = 2
-        maximumFractionDigits = 2
-    }
-    return formatter.format(balanceInCents / 100.0)
+    val absCents = abs(balanceInCents)
+    val reais = absCents / 100
+    val centavos = absCents % 100
+    val signo = if (balanceInCents < 0) "-" else ""
+    return "$signo${
+        NumberFormat.getIntegerInstance(Locale.forLanguageTag("pt-BR")).format(reais)
+    },${centavos.toString().padStart(2, '0')}"
 }

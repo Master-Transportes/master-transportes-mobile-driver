@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.master.transportes.driver.core.error.AppError
+import com.master.transportes.driver.core.error.toUserMessage
 import com.master.transportes.driver.feature.home.presentation.home.HomeUiState
 
 @Composable
@@ -71,7 +71,7 @@ private fun BannerArea(
     ) {
         state.statusError?.let { error ->
             StatusErrorBanner(
-                message = statusErrorMessage(error),
+                message = error.toUserMessage(),
                 onRetry = onRetryLoadStatus
             )
         }
@@ -84,11 +84,4 @@ private fun BannerArea(
             GpsBanner(onClick = onOpenLocationSettings)
         }
     }
-}
-
-private fun statusErrorMessage(error: AppError): String = when (error) {
-    is AppError.Api -> error.message
-    is AppError.Network, is AppError.Timeout, is AppError.SSL ->
-        "Sem conexão com a internet."
-    else -> "Erro inesperado. Tente novamente."
 }

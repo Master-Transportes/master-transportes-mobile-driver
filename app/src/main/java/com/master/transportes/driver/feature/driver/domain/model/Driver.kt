@@ -5,7 +5,8 @@ enum class DriverStatus {
     APPROVED,
     REJECTED,
     SUSPENDED,
-    BANNED
+    BANNED,
+    UNKNOWN
 }
 
 data class Driver(

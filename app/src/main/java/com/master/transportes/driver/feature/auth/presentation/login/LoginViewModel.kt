@@ -3,6 +3,7 @@
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.master.transportes.driver.core.error.AppError
+import com.master.transportes.driver.core.error.toUserMessage
 import com.master.transportes.driver.core.result.ApiResult
 import com.master.transportes.driver.core.session.SessionManager
 import com.master.transportes.driver.feature.auth.domain.repository.AuthRepository
@@ -58,7 +59,7 @@ class LoginViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _uiState.update {
                         it.copy(
-                            errorMessage = errorMessageOf(result.error),
+                            errorMessage = result.error.toUserMessage(),
                             loginError = fieldMessageOf(result.error, "login"),
                             passwordError = fieldMessageOf(result.error, "password")
                         )
@@ -68,13 +69,6 @@ class LoginViewModel @Inject constructor(
 
             _uiState.update { it.copy(isLoading = false) }
         }
-    }
-
-    private fun errorMessageOf(error: AppError): String = when (error) {
-        is AppError.Api -> error.message
-        is AppError.Network, is AppError.Timeout, is AppError.SSL ->
-            "Sem conexão com a internet."
-        else -> "Erro inesperado. Tente novamente."
     }
 
     private fun fieldMessageOf(error: AppError, field: String): String? =

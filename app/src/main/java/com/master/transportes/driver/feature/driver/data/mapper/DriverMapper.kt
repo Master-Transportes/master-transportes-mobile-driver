@@ -17,4 +17,4 @@ fun DriverProfileResponseDto.toDomain(): Driver {
 }
 
 private fun String.toDriverStatus(): DriverStatus =
-    DriverStatus.entries.firstOrNull { it.name == this } ?: DriverStatus.PENDING
+    DriverStatus.entries.firstOrNull { it.name == this } ?: DriverStatus.UNKNOWN

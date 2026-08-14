@@ -14,7 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.master.transportes.driver.core.error.AppError
+import com.master.transportes.driver.core.error.toUserMessage
 import com.master.transportes.driver.feature.home.presentation.home.HomeUiState
 
 @Composable
@@ -73,7 +73,7 @@ private fun TopSection(
         state.error?.let { error ->
             Spacer(Modifier.height(8.dp))
             Text(
-                text = errorMessage(error),
+                text = error.toUserMessage(),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyLarge
             )
@@ -97,11 +97,4 @@ private fun CenterSection(
     if (state.isLoading) {
         CircularProgressIndicator(modifier)
     }
-}
-
-private fun errorMessage(error: AppError): String = when (error) {
-    is AppError.Api -> error.message
-    is AppError.Network, is AppError.Timeout, is AppError.SSL ->
-        "Sem conexão com a internet."
-    else -> "Erro inesperado. Tente novamente."
 }
