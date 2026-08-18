@@ -93,8 +93,10 @@ class HomeViewModel @Inject constructor(
             when (val result = driverRepository.getStatus()) {
                 is ApiResult.Success ->
                     _onlineStatus.value =
-                        if (result.data) OnlineStatusUiState.Online
-                        else OnlineStatusUiState.Offline
+                        when (result.data) {
+                            true -> OnlineStatusUiState.Online
+                            false -> OnlineStatusUiState.Offline
+                        }
                 is ApiResult.Error -> {
                     val lastKnown = _onlineStatus.value.isOnline
                     _onlineStatus.value = OnlineStatusUiState.Error(result.error, lastKnown)

@@ -17,6 +17,7 @@ import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -31,6 +32,10 @@ import com.master.transportes.driver.feature.driver.domain.model.DriverStatus
 import com.master.transportes.driver.feature.home.presentation.home.components.HomeOverlay
 import com.master.transportes.driver.feature.home.presentation.home.components.OnlineStatusBar
 import com.master.transportes.driver.feature.home.presentation.home.map.HomeMap
+import com.master.transportes.driver.feature.rideoffer.domain.model.RideOffer
+import com.master.transportes.driver.feature.rideoffer.domain.model.RidePoint
+import com.master.transportes.driver.feature.rideoffer.presentation.rideoffer.RideOfferCard
+import com.master.transportes.driver.feature.rideoffer.presentation.rideoffer.offerExpirationIso
 import com.master.transportes.driver.ui.theme.MasterTransportesMobileDriverTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,6 +43,9 @@ import com.master.transportes.driver.ui.theme.MasterTransportesMobileDriverTheme
 fun HomeContent(
     state: HomeUiState,
     snackbarHostState: SnackbarHostState,
+    rideOffer: RideOffer? = null,
+    onAcceptRideOffer: () -> Unit = {},
+    onDismissRideOffer: () -> Unit = {},
     onOpenLocationSettings: () -> Unit = {},
     onOpenAppPermissionSettings: () -> Unit = {},
     onGoOnline: () -> Unit = {},
@@ -66,47 +74,61 @@ fun HomeContent(
         (windowHeightPx - sheetOffsetPx - peekHeightPx).coerceAtLeast(0f).toDp()
     }
 
-    BottomSheetScaffold(
-        scaffoldState = scaffoldState,
-        sheetPeekHeight = 56.dp + navBarInset,
-        sheetDragHandle = null,
-        sheetSwipeEnabled = false,
-        sheetContainerColor = MaterialTheme.colorScheme.surface,
-        sheetShape = BottomSheetDefaults.HiddenShape,
-        sheetContent = {
-            // A barra de status online só existe quando há motorista carregado.
-            if (state is HomeUiState.Success) {
-                OnlineStatusBar(
-                    isOnline = state.onlineStatus.isOnline,
-                    onGoOffline = onGoOffline,
-                    sheetState = scaffoldState.bottomSheetState
+    Box(modifier = Modifier.fillMaxSize()) {
+        BottomSheetScaffold(
+            scaffoldState = scaffoldState,
+            sheetPeekHeight = 56.dp + navBarInset,
+            sheetDragHandle = null,
+            sheetSwipeEnabled = false,
+            sheetContainerColor = MaterialTheme.colorScheme.surface,
+            sheetShape = BottomSheetDefaults.HiddenShape,
+            sheetContent = {
+                // A barra de status online só existe quando há motorista carregado.
+                if (state is HomeUiState.Success) {
+                    OnlineStatusBar(
+                        isOnline = state.onlineStatus.isOnline,
+                        onGoOffline = onGoOffline,
+                        sheetState = scaffoldState.bottomSheetState
+                    )
+                }
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .statusBarsPadding()
+            ) {
+                // O mapa nunca é substituído pelos estados de loading/erro:
+                // eles aparecem como overlay por cima.
+                HomeMap(
+                    currentLocation = (state as? HomeUiState.Success)?.location?.current,
+                    cameraPositionState = cameraPositionState,
+                    isLocationGranted = (state as? HomeUiState.Success)?.location?.isGranted ?: false
+                )
+
+                HomeOverlay(
+                    state = state,
+                    onOpenLocationSettings = onOpenLocationSettings,
+                    onOpenAppPermissionSettings = onOpenAppPermissionSettings,
+                    onGoOnline = onGoOnline,
+                    onRetryLoadDriver = onRetryLoadDriver,
+                    onRetryLoadStatus = onRetryLoadStatus,
+                    bottomOffset = overlayExtraOffset
                 )
             }
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .statusBarsPadding()
-        ) {
-            // O mapa nunca é substituído pelos estados de loading/erro:
-            // eles aparecem como overlay por cima.
-            HomeMap(
-                currentLocation = (state as? HomeUiState.Success)?.location?.current,
-                cameraPositionState = cameraPositionState,
-                isLocationGranted = (state as? HomeUiState.Success)?.location?.isGranted ?: false
-            )
+        }
 
-            HomeOverlay(
-                state = state,
-                onOpenLocationSettings = onOpenLocationSettings,
-                onOpenAppPermissionSettings = onOpenAppPermissionSettings,
-                onGoOnline = onGoOnline,
-                onRetryLoadDriver = onRetryLoadDriver,
-                onRetryLoadStatus = onRetryLoadStatus,
-                bottomOffset = overlayExtraOffset
+        rideOffer?.let { offer ->
+            RideOfferCard(
+                offer = offer,
+                onAccept = onAcceptRideOffer,
+                onDismiss = onDismissRideOffer,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 56.dp + navBarInset + 16.dp + overlayExtraOffset)
             )
         }
     }
@@ -337,6 +359,48 @@ fun HomeActionErrorPreview() {
                 location = LocationUiState(isGranted = true, isGpsEnabled = true)
             ),
             snackbarHostState = remember { SnackbarHostState() }
+        )
+    }
+}
+
+// ---------- 12. Oferta de corrida ativa ----------
+@Preview(showBackground = true, name = "Oferta de corrida ativa")
+@Composable
+fun HomeRideOfferPreview() {
+    MasterTransportesMobileDriverTheme {
+        HomeContent(
+            state = HomeUiState.Success(
+                driver = Driver(
+                    id = "1",
+                    fullName = "Enderson Alves da Silva",
+                    email = "masterzarby@gmail.com",
+                    status = DriverStatus.APPROVED,
+                    balanceInCents = 15922L
+                ),
+                onlineStatus = OnlineStatusUiState.Online,
+                location = LocationUiState(
+                    isGranted = true,
+                    isGpsEnabled = true,
+                    current = LatLng(-23.5505, -46.6333)
+                )
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            rideOffer = RideOffer(
+                offerId = "offer_1",
+                rideId = "ride_1",
+                origin = RidePoint(
+                    name = "Av. Doutor Teixeira de Barros, Vila Boa Vista",
+                    lat = -23.5505,
+                    lng = -46.6333
+                ),
+                destination = RidePoint(
+                    name = "Rua Exemplo, 456 - Centro",
+                    lat = -23.6100,
+                    lng = -46.6900
+                ),
+                offerExpiresAt = offerExpirationIso(System.currentTimeMillis() + 20_000),
+                timestamp = offerExpirationIso(System.currentTimeMillis())
+            )
         )
     }
 }
