@@ -1,6 +1,9 @@
 ﻿package com.master.transportes.driver.core.error
 
 import com.google.gson.Gson
+import com.google.gson.JsonParseException
+import com.google.gson.JsonSyntaxException
+import com.google.gson.stream.MalformedJsonException
 import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
 import java.io.IOException
@@ -64,6 +67,13 @@ object ErrorMapper {
         // e o body contém um JSON de erro estruturado.
         // Diferente dos casos acima, aqui temos dados para extrair.
         is HttpException -> mapHttpException(e)
+
+        // JSON da resposta malformado ou fora do contrato esperado.
+        // Importante: o branch precisa vir ANTES do IOException porque
+        // MalformedJsonException é um IOException e seria engolido por ele.
+        is JsonSyntaxException,
+        is MalformedJsonException,
+        is JsonParseException -> AppError.Serialization
 
         // Qualquer outro erro de entrada/saída não categorizado acima.
         // Exemplos: falha de leitura/escrita, stream corrompido.

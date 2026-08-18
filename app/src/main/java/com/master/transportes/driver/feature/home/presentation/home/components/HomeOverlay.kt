@@ -17,6 +17,10 @@ import androidx.compose.ui.unit.dp
 import com.master.transportes.driver.core.error.toUserMessage
 import com.master.transportes.driver.feature.home.presentation.home.HomeUiState
 
+/**
+ * Camada sobreposta ao mapa. Os estados de Loading/Error/Empty são tratados
+ * aqui em `when` exaustivo — o mapa permanece visível por baixo.
+ */
 @Composable
 internal fun HomeOverlay(
     state: HomeUiState,
@@ -66,26 +70,29 @@ private fun TopSection(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        state.driver?.let { driver ->
-            WalletBadge(balanceInCents = driver.balanceInCents)
-        }
+        when (state) {
+            is HomeUiState.Success ->
+                WalletBadge(balanceInCents = state.driver.balanceInCents)
 
-        state.error?.let { error ->
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = error.toUserMessage(),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = onRetryLoadDriver,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            ) {
-                Text("Tentar novamente")
+            is HomeUiState.Error -> {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = state.error.toUserMessage(),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = onRetryLoadDriver,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                ) {
+                    Text("Tentar novamente")
+                }
             }
-        }
 
+            HomeUiState.Loading,
+            HomeUiState.Empty -> Unit
+        }
     }
 }
 
@@ -94,7 +101,7 @@ private fun CenterSection(
     state: HomeUiState,
     modifier: Modifier = Modifier
 ) {
-    if (state.isLoading) {
+    if (state is HomeUiState.Loading) {
         CircularProgressIndicator(modifier)
     }
 }

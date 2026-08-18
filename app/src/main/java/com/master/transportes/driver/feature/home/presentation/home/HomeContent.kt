@@ -15,7 +15,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -38,11 +37,11 @@ import com.master.transportes.driver.ui.theme.MasterTransportesMobileDriverTheme
 @Composable
 fun HomeContent(
     state: HomeUiState,
+    snackbarHostState: SnackbarHostState,
     onOpenLocationSettings: () -> Unit = {},
     onOpenAppPermissionSettings: () -> Unit = {},
     onGoOnline: () -> Unit = {},
     onGoOffline: () -> Unit = {},
-    onActionErrorShown: () -> Unit = {},
     onRetryLoadDriver: () -> Unit = {},
     onRetryLoadStatus: () -> Unit = {}
 ) {
@@ -50,7 +49,6 @@ fun HomeContent(
         position = CameraPosition.fromLatLngZoom(LatLng(-23.5505, -46.6333), 12f)
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
     val scaffoldState = rememberBottomSheetScaffoldState()
 
     val navBarInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -68,13 +66,6 @@ fun HomeContent(
         (windowHeightPx - sheetOffsetPx - peekHeightPx).coerceAtLeast(0f).toDp()
     }
 
-    LaunchedEffect(state.actionErrorMessage) {
-        state.actionErrorMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
-            onActionErrorShown()
-        }
-    }
-
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 56.dp + navBarInset,
@@ -83,11 +74,14 @@ fun HomeContent(
         sheetContainerColor = MaterialTheme.colorScheme.surface,
         sheetShape = BottomSheetDefaults.HiddenShape,
         sheetContent = {
-            OnlineStatusBar(
-                isOnline = state.isOnline,
-                onGoOffline = onGoOffline,
-                sheetState = scaffoldState.bottomSheetState
-            )
+            // A barra de status online só existe quando há motorista carregado.
+            if (state is HomeUiState.Success) {
+                OnlineStatusBar(
+                    isOnline = state.onlineStatus.isOnline,
+                    onGoOffline = onGoOffline,
+                    sheetState = scaffoldState.bottomSheetState
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
@@ -97,10 +91,12 @@ fun HomeContent(
                 .padding(innerPadding)
                 .statusBarsPadding()
         ) {
+            // O mapa nunca é substituído pelos estados de loading/erro:
+            // eles aparecem como overlay por cima.
             HomeMap(
-                currentLocation = state.currentLocation,
+                currentLocation = (state as? HomeUiState.Success)?.location?.current,
                 cameraPositionState = cameraPositionState,
-                isLocationGranted = state.isLocationGranted
+                isLocationGranted = (state as? HomeUiState.Success)?.location?.isGranted ?: false
             )
 
             HomeOverlay(
@@ -124,17 +120,8 @@ fun HomeContent(
 fun HomeLoadingPreview() {
     MasterTransportesMobileDriverTheme {
         HomeContent(
-            state = HomeUiState(
-                isLoading = true,
-                driver = null,
-                isOnline = false,
-                isLocationGranted = false,
-                isGpsEnabled = true,
-                isChangingOnlineStatus = false,
-                error = null,
-                currentLocation = null,
-                actionErrorMessage = null,
-            )
+            state = HomeUiState.Loading,
+            snackbarHostState = remember { SnackbarHostState() }
         )
     }
 }
@@ -145,31 +132,33 @@ fun HomeLoadingPreview() {
 fun HomeNetworkErrorPreview() {
     MasterTransportesMobileDriverTheme {
         HomeContent(
-            state = HomeUiState(
-                isLoading = false,
-                driver = null,
-                error = AppError.Network,
-                isOnline = false,
-                isLocationGranted = false,
-                isGpsEnabled = true,
-                isChangingOnlineStatus = false,
-                currentLocation = null,
-                actionErrorMessage = null,
-            )
+            state = HomeUiState.Error(AppError.Network),
+            snackbarHostState = remember { SnackbarHostState() }
+        )
+    }
+}
+
+// ---------- 3. Sem dados ----------
+@Preview(showBackground = true, name = "Vazio")
+@Composable
+fun HomeEmptyPreview() {
+    MasterTransportesMobileDriverTheme {
+        HomeContent(
+            state = HomeUiState.Empty,
+            snackbarHostState = remember { SnackbarHostState() }
         )
     }
 }
 
 // ========== ESTADOS DE SUCESSO ==========
 
-// ---------- 3. Sucesso – Motorista aprovado, online ----------
+// ---------- 4. Sucesso – Motorista aprovado, online ----------
 @Preview(showBackground = true, name = "Sucesso – Online")
 @Composable
 fun HomeSuccessOnlinePreview() {
     MasterTransportesMobileDriverTheme {
         HomeContent(
-            state = HomeUiState(
-                isLoading = false,
+            state = HomeUiState.Success(
                 driver = Driver(
                     id = "1",
                     fullName = "Enderson Alves da Silva",
@@ -177,26 +166,25 @@ fun HomeSuccessOnlinePreview() {
                     status = DriverStatus.APPROVED,
                     balanceInCents = 15922L
                 ),
-                isOnline = true,
-                isLocationGranted = true,
-                isGpsEnabled = true,
-                isChangingOnlineStatus = false,
-                error = null,
-                currentLocation = LatLng(-23.5505, -46.6333), // São Paulo
-                actionErrorMessage = null,
-            )
+                onlineStatus = OnlineStatusUiState.Online,
+                location = LocationUiState(
+                    isGranted = true,
+                    isGpsEnabled = true,
+                    current = LatLng(-23.5505, -46.6333)
+                )
+            ),
+            snackbarHostState = remember { SnackbarHostState() }
         )
     }
 }
 
-// ---------- 4. Sucesso – Motorista aprovado, offline ----------
+// ---------- 5. Sucesso – Motorista aprovado, offline ----------
 @Preview(showBackground = true, name = "Sucesso – Offline")
 @Composable
 fun HomeSuccessOfflinePreview() {
     MasterTransportesMobileDriverTheme {
         HomeContent(
-            state = HomeUiState(
-                isLoading = false,
+            state = HomeUiState.Success(
                 driver = Driver(
                     id = "1",
                     fullName = "Enderson Alves da Silva",
@@ -204,28 +192,23 @@ fun HomeSuccessOfflinePreview() {
                     status = DriverStatus.APPROVED,
                     balanceInCents = 15922L
                 ),
-                isOnline = false,
-                isLocationGranted = true,
-                isGpsEnabled = true,
-                isChangingOnlineStatus = false,
-                error = null,
-                currentLocation = null,
-                actionErrorMessage = null,
-            )
+                onlineStatus = OnlineStatusUiState.Offline,
+                location = LocationUiState()
+            ),
+            snackbarHostState = remember { SnackbarHostState() }
         )
     }
 }
 
 // ========== ESTADOS DO MOTORISTA (NÃO APROVADO) ==========
 
-// ---------- 5. Motorista pendente ----------
+// ---------- 6. Motorista pendente ----------
 @Preview(showBackground = true, name = "Motorista Pendente")
 @Composable
 fun HomePendingDriverPreview() {
     MasterTransportesMobileDriverTheme {
         HomeContent(
-            state = HomeUiState(
-                isLoading = false,
+            state = HomeUiState.Success(
                 driver = Driver(
                     id = "2",
                     fullName = "Maria Oliveira",
@@ -233,28 +216,23 @@ fun HomePendingDriverPreview() {
                     status = DriverStatus.PENDING,
                     balanceInCents = 0L
                 ),
-                isOnline = false,
-                isLocationGranted = true,
-                isGpsEnabled = true,
-                isChangingOnlineStatus = false,
-                error = null,
-                currentLocation = null,
-                actionErrorMessage = null,
-            )
+                onlineStatus = OnlineStatusUiState.Offline,
+                location = LocationUiState(isGranted = true, isGpsEnabled = true)
+            ),
+            snackbarHostState = remember { SnackbarHostState() }
         )
     }
 }
 
 // ========== ESTADOS DE PERMISSÃO / LOCALIZAÇÃO / GPS ==========
 
-// ---------- 6. Localização negada ----------
+// ---------- 7. Localização negada ----------
 @Preview(showBackground = true, name = "Localização negada")
 @Composable
 fun HomeLocationDeniedPreview() {
     MasterTransportesMobileDriverTheme {
         HomeContent(
-            state = HomeUiState(
-                isLoading = false,
+            state = HomeUiState.Success(
                 driver = Driver(
                     id = "1",
                     fullName = "Enderson Alves da Silva",
@@ -262,26 +240,21 @@ fun HomeLocationDeniedPreview() {
                     status = DriverStatus.APPROVED,
                     balanceInCents = 15922L
                 ),
-                isOnline = false,
-                isLocationGranted = false, // permissão negada
-                isGpsEnabled = true,
-                isChangingOnlineStatus = false,
-                error = null,
-                currentLocation = null,
-                actionErrorMessage = null,
-            )
+                onlineStatus = OnlineStatusUiState.Offline,
+                location = LocationUiState(isGranted = false, isGpsEnabled = true)
+            ),
+            snackbarHostState = remember { SnackbarHostState() }
         )
     }
 }
 
-// ---------- 7. GPS desligado ----------
+// ---------- 8. GPS desligado ----------
 @Preview(showBackground = true, name = "GPS desligado")
 @Composable
 fun HomeGpsDisabledPreview() {
     MasterTransportesMobileDriverTheme {
         HomeContent(
-            state = HomeUiState(
-                isLoading = false,
+            state = HomeUiState.Success(
                 driver = Driver(
                     id = "1",
                     fullName = "Enderson Alves da Silva",
@@ -289,28 +262,23 @@ fun HomeGpsDisabledPreview() {
                     status = DriverStatus.APPROVED,
                     balanceInCents = 15922L
                 ),
-                isOnline = false,
-                isLocationGranted = true,
-                isGpsEnabled = false, // GPS desativado
-                isChangingOnlineStatus = false,
-                error = null,
-                currentLocation = null,
-                actionErrorMessage = null,
-            )
+                onlineStatus = OnlineStatusUiState.Offline,
+                location = LocationUiState(isGranted = true, isGpsEnabled = false)
+            ),
+            snackbarHostState = remember { SnackbarHostState() }
         )
     }
 }
 
 // ========== ESTADOS DE AÇÃO / INTERAÇÃO ==========
 
-// ---------- 8. Alterando status online (loading) ----------
+// ---------- 9. Alterando status online (loading da ação) ----------
 @Preview(showBackground = true, name = "Alterando status online")
 @Composable
 fun HomeChangingOnlineStatusPreview() {
     MasterTransportesMobileDriverTheme {
         HomeContent(
-            state = HomeUiState(
-                isLoading = false,
+            state = HomeUiState.Success(
                 driver = Driver(
                     id = "1",
                     fullName = "Enderson Alves da Silva",
@@ -318,26 +286,46 @@ fun HomeChangingOnlineStatusPreview() {
                     status = DriverStatus.APPROVED,
                     balanceInCents = 15922L
                 ),
-                isOnline = false,
-                isLocationGranted = true,
-                isGpsEnabled = true,
-                isChangingOnlineStatus = true, // aguardando resposta do servidor
-                error = null,
-                currentLocation = null,
-                actionErrorMessage = null,
-            )
+                onlineStatus = OnlineStatusUiState.Loading(OnlineStatusUiState.Offline),
+                location = LocationUiState(isGranted = true, isGpsEnabled = true)
+            ),
+            snackbarHostState = remember { SnackbarHostState() }
         )
     }
 }
 
-// ---------- 9. Mensagem de erro de ação (ex.: falha ao alternar status) ----------
+// ---------- 10. Falha no carregamento do status online ----------
+@Preview(showBackground = true, name = "Erro de status")
+@Composable
+fun HomeStatusErrorPreview() {
+    MasterTransportesMobileDriverTheme {
+        HomeContent(
+            state = HomeUiState.Success(
+                driver = Driver(
+                    id = "1",
+                    fullName = "Enderson Alves da Silva",
+                    email = "masterzarby@gmail.com",
+                    status = DriverStatus.APPROVED,
+                    balanceInCents = 15922L
+                ),
+                onlineStatus = OnlineStatusUiState.Error(
+                    error = AppError.Network,
+                    lastKnownOnline = false
+                ),
+                location = LocationUiState(isGranted = true, isGpsEnabled = true)
+            ),
+            snackbarHostState = remember { SnackbarHostState() }
+        )
+    }
+}
+
+// ---------- 11. Mensagem de erro de ação (Snackbar) ----------
 @Preview(showBackground = true, name = "Erro de ação")
 @Composable
 fun HomeActionErrorPreview() {
     MasterTransportesMobileDriverTheme {
         HomeContent(
-            state = HomeUiState(
-                isLoading = false,
+            state = HomeUiState.Success(
                 driver = Driver(
                     id = "1",
                     fullName = "Enderson Alves da Silva",
@@ -345,14 +333,10 @@ fun HomeActionErrorPreview() {
                     status = DriverStatus.APPROVED,
                     balanceInCents = 15922L
                 ),
-                isOnline = false,
-                isLocationGranted = true,
-                isGpsEnabled = true,
-                isChangingOnlineStatus = false,
-                error = null,
-                currentLocation = null,
-                actionErrorMessage = "Não foi possível conectar. Tente novamente.",
-            )
+                onlineStatus = OnlineStatusUiState.Offline,
+                location = LocationUiState(isGranted = true, isGpsEnabled = true)
+            ),
+            snackbarHostState = remember { SnackbarHostState() }
         )
     }
 }

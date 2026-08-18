@@ -3,7 +3,7 @@ package com.master.transportes.driver.core.network
 import com.master.transportes.driver.core.error.AppError
 import com.master.transportes.driver.core.error.ErrorMapper
 import com.master.transportes.driver.core.session.SessionManager
-import com.master.transportes.driver.feature.auth.data.api.AuthApi
+import com.master.transportes.driver.feature.auth.data.datasource.AuthRemoteDataSource
 import com.master.transportes.driver.feature.auth.data.dto.RefreshRequestDto
 import com.master.transportes.driver.feature.auth.data.mapper.toDomain
 import kotlinx.coroutines.runBlocking
@@ -22,11 +22,12 @@ import javax.inject.Singleton
 @Singleton
 class TokenAuthenticator @Inject constructor(
     private val sessionManager: SessionManager,
-    @param:Named("refreshAuthApi") private val authApi: AuthApi
+    @param:Named("refreshAuthDataSource") private val authRemoteDataSource: AuthRemoteDataSource
 ) : Authenticator {
 
     companion object {
         private const val REFRESH_FAILURE_COOLDOWN_MS = 2_000L
+        private const val REFRESH_PATH = "/driver/refresh"
     }
 
     private val refreshMutex = Mutex()
@@ -93,7 +94,7 @@ class TokenAuthenticator @Inject constructor(
     private suspend fun refreshSession(refreshToken: String): Boolean {
         val sessionId = sessionManager.getSessionId() ?: return false
         return try {
-            val tokens = authApi.refresh(
+            val tokens = authRemoteDataSource.refresh(
                 RefreshRequestDto(
                     refreshToken = refreshToken,
                     sessionId = sessionId
@@ -117,7 +118,7 @@ class TokenAuthenticator @Inject constructor(
     }
 
     private fun Request.isRefreshRequest(): Boolean {
-        return url.encodedPath.endsWith("/driver/refresh")
+        return url.encodedPath.endsWith(REFRESH_PATH)
     }
 
     private fun Request.bearerToken(): String? {

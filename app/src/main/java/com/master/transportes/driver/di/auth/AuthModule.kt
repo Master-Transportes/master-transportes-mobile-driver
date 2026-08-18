@@ -1,6 +1,7 @@
 ﻿package com.master.transportes.driver.di.auth
 
 import com.master.transportes.driver.feature.auth.data.api.AuthApi
+import com.master.transportes.driver.feature.auth.data.datasource.AuthRemoteDataSource
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,5 +27,14 @@ object AuthModule {
         @Named("refreshRetrofit") retrofit: Retrofit
     ): AuthApi {
         return retrofit.create(AuthApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @Named("refreshAuthDataSource")
+    fun provideRefreshAuthRemoteDataSource(
+        @Named("refreshAuthApi") api: AuthApi
+    ): AuthRemoteDataSource {
+        return AuthRemoteDataSource(api)
     }
 }

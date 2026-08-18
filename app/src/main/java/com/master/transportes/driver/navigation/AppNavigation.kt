@@ -10,7 +10,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -51,6 +54,7 @@ fun AppNavigation(sessionManager: SessionManager) {
                 onNavigateToHome = {
                     navController.navigate(Routes.Home.route) {
                         popUpTo(Routes.Login.route) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
@@ -60,17 +64,19 @@ fun AppNavigation(sessionManager: SessionManager) {
         }
     }
 
-    // Logout/sessão expirada: volta para Login.
-    LaunchedEffect(sessionState) {
-        if (sessionState is SessionState.Unauthenticated &&
-            navController.currentDestination?.route != Routes.Login.route
-        ) {
-            navController.navigate(Routes.Login.route) {
-                popUpTo(navController.graph.id) {
-                    inclusive = true
+    // Logout/sessão expirada: volta para Login (evento one-shot do SessionManager).
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            sessionManager.logoutEvents.collect {
+                navController.navigate(Routes.Login.route) {
+                    popUpTo(navController.graph.id) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
                 }
             }
         }
     }
-
 }

@@ -6,21 +6,25 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.master.transportes.driver.core.error.AppError
+import com.master.transportes.driver.di.ApplicationScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class SessionManager @Inject constructor(
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     companion object {
         private val TOKEN_KEY = stringPreferencesKey("token")
@@ -44,8 +48,11 @@ class SessionManager @Inject constructor(
 
     val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
 
+    private val _logoutEvents = Channel<Unit>(Channel.BUFFERED)
+    val logoutEvents: Flow<Unit> = _logoutEvents.receiveAsFlow()
+
     init {
-        CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+        applicationScope.launch {
             try{
                 val prefs = dataStore.data.first()
                 val token = prefs[TOKEN_KEY]
@@ -87,28 +94,37 @@ class SessionManager @Inject constructor(
     fun getSessionId(): String? = sessionId
 
     suspend fun saveSession(session: Session) {
-        _token.value = session.token
-        refreshToken = session.refreshToken
-        sessionId = session.sessionId
-        _sessionState.value = SessionState.Authenticated(session)
         dataStore.edit { prefs ->
             prefs[TOKEN_KEY] = session.token
             prefs[REFRESH_TOKEN_KEY] = session.refreshToken
             prefs[SESSION_ID_KEY] = session.sessionId
             prefs[EXPIRES_IN_KEY] = session.expiresIn
         }
+        _token.value = session.token
+        refreshToken = session.refreshToken
+        sessionId = session.sessionId
+        _sessionState.value = SessionState.Authenticated(session)
     }
 
     suspend fun clearSession() {
-        _token.value = null
-        refreshToken = null
-        sessionId = null
-        _sessionState.value = SessionState.Unauthenticated
-        dataStore.edit { prefs ->
-            prefs.remove(TOKEN_KEY)
-            prefs.remove(REFRESH_TOKEN_KEY)
-            prefs.remove(SESSION_ID_KEY)
-            prefs.remove(EXPIRES_IN_KEY)
+        val wasAuthenticated = _sessionState.value is SessionState.Authenticated
+        try {
+            dataStore.edit { prefs ->
+                prefs.remove(TOKEN_KEY)
+                prefs.remove(REFRESH_TOKEN_KEY)
+                prefs.remove(SESSION_ID_KEY)
+                prefs.remove(EXPIRES_IN_KEY)
+            }
+            _token.value = null
+            refreshToken = null
+            sessionId = null
+            _sessionState.value = SessionState.Unauthenticated
+
+            if (wasAuthenticated) {
+                _logoutEvents.send(Unit)
+            }
+        } catch (e: IOException) {
+            // Mantém o estado atual para não limpar pela metade.
         }
     }
 

@@ -2,8 +2,6 @@
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.master.transportes.driver.core.error.AppError
-import com.master.transportes.driver.core.error.toUserMessage
 import com.master.transportes.driver.core.result.ApiResult
 import com.master.transportes.driver.core.session.SessionManager
 import com.master.transportes.driver.feature.auth.domain.repository.AuthRepository
@@ -37,43 +35,34 @@ class LoginViewModel @Inject constructor(
     }
 
     fun login() {
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    errorMessage = null,
-                    loginError = null,
-                    passwordError = null
-                )
-            }
+        // Single-flight: se já está logando, ignora.
+        if (_uiState.value.submit is SubmitState.Loading) return
 
-            when (val result = repository.login(
-                login = _uiState.value.login,
-                password = _uiState.value.password
-            )) {
+        val login = _uiState.value.login
+        val password = _uiState.value.password
+
+        _uiState.update {
+            it.copy(submit = SubmitState.Loading)
+        }
+
+        viewModelScope.launch {
+            when (val result = repository.login(login = login, password = password)) {
                 is ApiResult.Success -> {
                     sessionManager.saveSession(result.data)
+                    // Não seta Success: sucesso é evento de navegação.
                     _navigationEvent.send(Unit)
                 }
 
                 is ApiResult.Error -> {
                     _uiState.update {
                         it.copy(
-                            errorMessage = result.error.toUserMessage(),
-                            loginError = fieldMessageOf(result.error, "login"),
-                            passwordError = fieldMessageOf(result.error, "password")
+                            submit = SubmitState.Error(
+                                error = result.error,
+                            )
                         )
                     }
                 }
             }
-
-            _uiState.update { it.copy(isLoading = false) }
         }
     }
-
-    private fun fieldMessageOf(error: AppError, field: String): String? =
-        (error as? AppError.Api)
-            ?.details
-            ?.find { it.field == field }
-            ?.message
 }

@@ -6,4 +6,5 @@ fun AppError.toUserMessage(): String = when (this) {
     AppError.SSL -> "Falha de segurança na conexão."
     is AppError.Unknown -> "Erro inesperado. Tente novamente."
     is AppError.Api -> message
+    AppError.Serialization -> "Resposta do servidor inesperada. Tente novamente."
 }

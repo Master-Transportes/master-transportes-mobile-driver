@@ -11,6 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.master.transportes.driver.core.error.toUserMessage
 import com.master.transportes.driver.feature.home.presentation.home.HomeUiState
+import com.master.transportes.driver.feature.home.presentation.home.LocationUiState
+import com.master.transportes.driver.feature.home.presentation.home.OnlineStatusUiState
+import com.master.transportes.driver.feature.home.presentation.home.isChanging
+import com.master.transportes.driver.feature.home.presentation.home.isOnline
 
 @Composable
 internal fun BottomSection(
@@ -21,6 +25,9 @@ internal fun BottomSection(
     onRetryLoadStatus: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    // Só renderiza ações e banners quando há motorista carregado.
+    if (state !is HomeUiState.Success) return
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -29,12 +36,13 @@ internal fun BottomSection(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         ActionArea(
-            state = state,
+            onlineStatus = state.onlineStatus,
             onGoOnline = onGoOnline
         )
 
         BannerArea(
-            state = state,
+            onlineStatus = state.onlineStatus,
+            location = state.location,
             onOpenLocationSettings = onOpenLocationSettings,
             onOpenAppPermissionSettings = onOpenAppPermissionSettings,
             onRetryLoadStatus = onRetryLoadStatus
@@ -44,15 +52,15 @@ internal fun BottomSection(
 
 @Composable
 private fun ActionArea(
-    state: HomeUiState,
+    onlineStatus: OnlineStatusUiState,
     onGoOnline: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxWidth()) {
         OnlineActionButton(
-            isOnline = state.isOnline,
+            isOnline = onlineStatus.isOnline,
             onGoOnline = onGoOnline,
-            enabled = !state.isChangingOnlineStatus,
+            enabled = !onlineStatus.isChanging,
             modifier = Modifier.align(Alignment.Center)
         )
     }
@@ -60,7 +68,8 @@ private fun ActionArea(
 
 @Composable
 private fun BannerArea(
-    state: HomeUiState,
+    onlineStatus: OnlineStatusUiState,
+    location: LocationUiState,
     onOpenLocationSettings: () -> Unit,
     onOpenAppPermissionSettings: () -> Unit,
     onRetryLoadStatus: () -> Unit
@@ -69,18 +78,18 @@ private fun BannerArea(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        state.statusError?.let { error ->
+        (onlineStatus as? OnlineStatusUiState.Error)?.let { statusError ->
             StatusErrorBanner(
-                message = error.toUserMessage(),
+                message = statusError.error.toUserMessage(),
                 onRetry = onRetryLoadStatus
             )
         }
 
-        if (!state.isLocationGranted) {
+        if (!location.isGranted) {
             PermissionBanner(onClick = onOpenAppPermissionSettings)
         }
 
-        if (!state.isGpsEnabled) {
+        if (!location.isGpsEnabled) {
             GpsBanner(onClick = onOpenLocationSettings)
         }
     }

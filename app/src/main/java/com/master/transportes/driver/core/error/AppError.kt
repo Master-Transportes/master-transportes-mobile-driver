@@ -54,8 +54,26 @@ sealed class AppError {
     data class Api(
         val code: String,
         val message: String,
+
+        /**
+         * Detalhes de validação por campo.
+         *
+         * Reservado para quando a API passar a retornar erros específicos
+         * (ex.: { "field": "login", "message": "E-mail inválido" }).
+         * Hoje o backend retorna apenas uma mensagem geral, mas mantemos
+         * este campo para não quebrar o contrato quando isso mudar.
+         */
         val details: List<FieldError>? = null
     ) : AppError()
+
+    /**
+     * JSON de resposta fora do contrato esperado (malformado/esquema inválido).
+     *
+     * Difere de Unknown para que uma falha de serialização seja rastreável
+     * separadamente: normalmente significa que o backend mudou o contrato
+     * da API sem avisar.
+     */
+    data object Serialization : AppError()
 }
 
 /**

@@ -3,6 +3,7 @@ package com.master.transportes.driver.feature.auth.data.datasource
 import com.master.transportes.driver.feature.auth.data.api.AuthApi
 import com.master.transportes.driver.feature.auth.data.dto.LoginRequestDto
 import com.master.transportes.driver.feature.auth.data.dto.LoginResponseDto
+import com.master.transportes.driver.feature.auth.data.dto.RefreshRequestDto
 import javax.inject.Inject
 
 /**
@@ -18,5 +19,9 @@ class AuthRemoteDataSource @Inject constructor(
 
     suspend fun login(body: LoginRequestDto): LoginResponseDto {
         return api.login(body)
+    }
+
+    suspend fun refresh(body: RefreshRequestDto): LoginResponseDto {
+        return api.refresh(body)
     }
 }
