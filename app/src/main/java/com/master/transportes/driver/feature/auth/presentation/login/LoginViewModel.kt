@@ -49,6 +49,10 @@ class LoginViewModel @Inject constructor(
             when (val result = repository.login(login = login, password = password)) {
                 is ApiResult.Success -> {
                     sessionManager.saveSession(result.data)
+                    // Navega direto. O bootstrap da sessão (getMe + getStatus)
+                    // é responsabilidade do SessionBootstrapStarter, que observa
+                    // o estado Authenticated — cobre login e cold start sem
+                    // duplicar gatilhos nem chamadas de rede.
                     // Não seta Success: sucesso é evento de navegação.
                     _navigationEvent.send(Unit)
                 }

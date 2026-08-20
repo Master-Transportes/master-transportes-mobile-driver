@@ -58,6 +58,10 @@ android {
     }
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -98,6 +102,11 @@ dependencies {
 
     // Como teremos Login, vamos precisar salvar: JWT, Refresh Token, Tema...
     implementation(libs.androidx.datastore.preferences)
+
+    // Room (persistência local do perfil do motorista)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     // hiltViewModel(). A própria documentação diz que a API foi movida para um novo artefato e novo pacote.
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)

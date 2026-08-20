@@ -6,7 +6,9 @@ import com.google.android.gms.maps.model.LatLng
 import com.master.transportes.driver.core.location.GpsMonitor
 import com.master.transportes.driver.core.location.LocationProvider
 import com.master.transportes.driver.core.result.ApiResult
-import com.master.transportes.driver.feature.driver.domain.model.Driver
+import com.master.transportes.driver.feature.driver.domain.DriverSession
+import com.master.transportes.driver.feature.driver.domain.DriverSessionStore
+import com.master.transportes.driver.feature.driver.domain.SessionBootstrap
 import com.master.transportes.driver.feature.driver.domain.repository.DriverRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -28,36 +30,53 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val driverRepository: DriverRepository,
+    private val driverSessionStore: DriverSessionStore,
+    private val sessionBootstrap: SessionBootstrap,
     private val locationProvider: LocationProvider,
     private val gpsMonitor: GpsMonitor
 ) : ViewModel() {
 
     /**
-     * Fontes independentes das seções da tela. Cada coroutine atualiza a sua
-     * própria fonte e o `combine` monta o HomeUiState — isso elimina a condição
-     * de corrida entre carregar o motorista e carregar o status online.
+     * O motorista e o status online vêm do DriverSessionStore (fonte única,
+     * alimentada pelo Room + bootstrap). A Home NÃO faz getMe()/getStatus():
+     * ela apenas observa o estado compartilhado.
+     *
+     * O que continua local é o transitório da ação online/offline (botão
+     * "alterando") e a localização/GPS.
      */
 
-    /** null = ainda carregando. */
-    private val _driver = MutableStateFlow<ApiResult<Driver>?>(null)
-
-    private val _onlineStatus = MutableStateFlow<OnlineStatusUiState>(OnlineStatusUiState.Unknown)
+    /** true enquanto uma ação goOnline/goOffline está em andamento. */
+    private val _onlineActionChanging = MutableStateFlow(false)
 
     private val _location = MutableStateFlow(LocationUiState())
 
     val uiState: StateFlow<HomeUiState> = combine(
-        _driver,
-        _onlineStatus,
+        driverSessionStore.state,
+        _onlineActionChanging,
         _location,
-    ) { driverResult, onlineStatus, location ->
-        when (driverResult) {
-            null -> HomeUiState.Loading
-            is ApiResult.Error -> HomeUiState.Error(driverResult.error)
-            is ApiResult.Success -> HomeUiState.Success(
-                driver = driverResult.data,
+    ) { session, actionChanging, location ->
+        val onlineStatus =
+            if (actionChanging) {
+                OnlineStatusUiState.Loading(deriveOnlineStatus(session))
+            } else {
+                deriveOnlineStatus(session)
+            }
+
+        when {
+            session.driver == null &&
+                session.isDriverLoading &&
+                session.driverError == null -> HomeUiState.Loading
+
+            session.driver == null &&
+                session.driverError != null -> HomeUiState.Error(session.driverError)
+
+            session.driver != null -> HomeUiState.Success(
+                driver = session.driver,
                 onlineStatus = onlineStatus,
                 location = location,
             )
+
+            else -> HomeUiState.Loading
         }
     }.stateIn(
         scope = viewModelScope,
@@ -70,57 +89,52 @@ class HomeViewModel @Inject constructor(
     val actionErrorMessage: Flow<String> = _actionErrorMessage.receiveAsFlow()
 
     init {
-        loadDriver()
-        loadStatus()
         observeGps()
         observeLocation()
     }
 
-    private fun loadDriver() {
-        viewModelScope.launch {
-            _driver.value = null
-            val result = driverRepository.getMe()
-            _driver.value = result
-        }
-    }
+    /**
+     * Mapeia o estado do store para o OnlineStatusUiState da tela, preservando
+     * a UX atual: erro mantém o último status conhecido (session.isOnline) e
+     * o botão continua funcionando a partir dele.
+     */
+    private fun deriveOnlineStatus(session: DriverSession): OnlineStatusUiState =
+        when {
+            session.statusError != null ->
+                OnlineStatusUiState.Error(session.statusError, session.isOnline)
 
+            session.isOnline -> OnlineStatusUiState.Online
+            else -> OnlineStatusUiState.Offline
+        }
+
+    /** Re-tenta o carregamento do perfil (só o driver; o status não é refeito). */
     fun retryLoadDriver() {
-        loadDriver()
+        viewModelScope.launch { sessionBootstrap.refreshDriver() }
     }
 
-    private fun loadStatus() {
-        viewModelScope.launch {
-            when (val result = driverRepository.getStatus()) {
-                is ApiResult.Success ->
-                    _onlineStatus.value =
-                        when (result.data) {
-                            true -> OnlineStatusUiState.Online
-                            false -> OnlineStatusUiState.Offline
-                        }
-                is ApiResult.Error -> {
-                    val lastKnown = _onlineStatus.value.isOnline
-                    _onlineStatus.value = OnlineStatusUiState.Error(result.error, lastKnown)
-                }
-            }
-        }
-    }
-
+    /** Re-tenta o carregamento do status online (só o status; o driver não é refeito). */
     fun retryLoadStatus() {
-        loadStatus()
+        viewModelScope.launch { sessionBootstrap.refreshStatus() }
     }
 
     fun onGoOnline() {
-        if (_onlineStatus.value is OnlineStatusUiState.Loading) return
+        if (_onlineActionChanging.value) return
 
-        val previous = _onlineStatus.value
-        _onlineStatus.value = OnlineStatusUiState.Loading(previous)
+        _onlineActionChanging.value = true
 
         viewModelScope.launch {
             when (val result = driverRepository.goOnline()) {
                 is ApiResult.Success ->
-                    _onlineStatus.value = OnlineStatusUiState.Online
+                    if (result.data) {
+                        driverSessionStore.setOnline(true)
+                        _onlineActionChanging.value = false
+                    } else {
+                        _onlineActionChanging.value = false
+                        _actionErrorMessage.send("Não foi possível ficar online agora. Tente novamente.")
+                    }
+
                 is ApiResult.Error -> {
-                    _onlineStatus.value = previous
+                    _onlineActionChanging.value = false
                     _actionErrorMessage.send("Não foi possível ficar online. Tente novamente.")
                 }
             }
@@ -128,17 +142,23 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onGoOffline() {
-        if (_onlineStatus.value is OnlineStatusUiState.Loading) return
+        if (_onlineActionChanging.value) return
 
-        val previous = _onlineStatus.value
-        _onlineStatus.value = OnlineStatusUiState.Loading(previous)
+        _onlineActionChanging.value = true
 
         viewModelScope.launch {
             when (val result = driverRepository.goOffline()) {
                 is ApiResult.Success ->
-                    _onlineStatus.value = OnlineStatusUiState.Offline
+                    if (!result.data) {
+                        driverSessionStore.setOnline(false)
+                        _onlineActionChanging.value = false
+                    } else {
+                        _onlineActionChanging.value = false
+                        _actionErrorMessage.send("Não foi possível ficar offline agora. Tente novamente.")
+                    }
+
                 is ApiResult.Error -> {
-                    _onlineStatus.value = previous
+                    _onlineActionChanging.value = false
                     _actionErrorMessage.send("Não foi possível ficar offline. Tente novamente.")
                 }
             }
