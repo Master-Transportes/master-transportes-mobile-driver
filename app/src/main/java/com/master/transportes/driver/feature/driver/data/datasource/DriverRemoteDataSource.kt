@@ -3,6 +3,7 @@ package com.master.transportes.driver.feature.driver.data.datasource
 import com.master.transportes.driver.feature.driver.data.api.DriverApi
 import com.master.transportes.driver.feature.driver.data.dto.DriverProfileResponseDto
 import com.master.transportes.driver.feature.driver.data.dto.DriverStatusResponseDto
+import com.master.transportes.driver.feature.driver.data.dto.UpdateDriverLocationDto
 import javax.inject.Inject
 
 /**
@@ -30,5 +31,9 @@ class DriverRemoteDataSource @Inject constructor(
 
     suspend fun goOffline(): DriverStatusResponseDto {
         return api.goOffline()
+    }
+
+    suspend fun updateLocation(latitude: Double, longitude: Double) {
+        api.updateLocation(UpdateDriverLocationDto(latitude, longitude))
     }
 }

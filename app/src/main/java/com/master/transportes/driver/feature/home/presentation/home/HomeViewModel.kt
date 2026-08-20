@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
 import com.master.transportes.driver.core.location.GpsMonitor
 import com.master.transportes.driver.core.location.LocationProvider
+import com.master.transportes.driver.core.permission.LocationPermissionStore
 import com.master.transportes.driver.core.result.ApiResult
 import com.master.transportes.driver.feature.driver.domain.DriverSession
 import com.master.transportes.driver.feature.driver.domain.DriverSessionStore
@@ -35,7 +36,8 @@ class HomeViewModel @Inject constructor(
     private val walletStore: WalletStore,
     private val sessionBootstrap: SessionBootstrap,
     private val locationProvider: LocationProvider,
-    private val gpsMonitor: GpsMonitor
+    private val gpsMonitor: GpsMonitor,
+    private val locationPermissionStore: LocationPermissionStore,
 ) : ViewModel() {
 
     /**
@@ -179,6 +181,7 @@ class HomeViewModel @Inject constructor(
 
     fun onLocationPermissionResult(granted: Boolean) {
         _location.update { it.copy(isGranted = granted) }
+        locationPermissionStore.updateGranted(granted)
     }
 
     private fun observeLocation() {

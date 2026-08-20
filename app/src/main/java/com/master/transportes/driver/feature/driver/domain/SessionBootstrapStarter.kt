@@ -3,6 +3,7 @@ package com.master.transportes.driver.feature.driver.domain
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.master.transportes.driver.core.location.LocationUploader
 import com.master.transportes.driver.core.session.SessionManager
 import com.master.transportes.driver.core.session.SessionState
 import com.master.transportes.driver.di.ApplicationScope
@@ -51,6 +52,7 @@ class SessionBootstrapStarter @Inject constructor(
     private val store: DriverSessionStore,
     private val walletStore: WalletStore,
     private val repository: DriverRepository,
+    private val locationUploader: LocationUploader,
 ) {
 
     init {
@@ -58,6 +60,8 @@ class SessionBootstrapStarter @Inject constructor(
             sessionManager.sessionState.collect { state ->
                 if (state is SessionState.Authenticated) {
                     bootstrap.initialize()
+                    // Confirmação de localização ao entrar no app (login/cold start).
+                    locationUploader.confirmCurrentLocation()
                 }
             }
         }

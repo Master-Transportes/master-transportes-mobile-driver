@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
  *   - refreshDriver()   → sincroniza API → Room (único ponto de escrita do perfil)
  *   - getStatus()       → somente bootstrap/refresh (status online, em memória)
  *   - goOnline()/goOffline() → ações do usuário
+ *   - updateLocation()  → envio throttled da localização (LocationUploader)
  *   - clearDriver()     → logout
  *
  * NÃO existe mais getMe() público: cada tela não tem motivo para chamar a API
@@ -28,6 +29,8 @@ interface DriverRepository {
     suspend fun goOnline(): ApiResult<Boolean>
 
     suspend fun goOffline(): ApiResult<Boolean>
+
+    suspend fun updateLocation(latitude: Double, longitude: Double): ApiResult<Unit>
 
     suspend fun clearDriver()
 }

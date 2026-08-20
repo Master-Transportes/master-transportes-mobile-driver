@@ -37,6 +37,12 @@ class DriverRepositoryImpl @Inject constructor(
         remote.goOffline().online
     }
 
+    override suspend fun updateLocation(latitude: Double, longitude: Double): ApiResult<Unit> =
+        safeApiCall {
+            remote.updateLocation(latitude, longitude)
+            Unit
+        }
+
     override suspend fun clearDriver() {
         driverDao.clear()
     }
