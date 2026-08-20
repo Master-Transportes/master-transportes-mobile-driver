@@ -16,5 +16,4 @@ data class Driver(
     val status: DriverStatus,
     val rejectionReason: String? = null,
     val banReason: String? = null,
-    val balanceInCents: Long = 0L
 )

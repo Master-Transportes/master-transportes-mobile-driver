@@ -2,6 +2,8 @@ package com.master.transportes.driver.feature.driver.domain
 
 import com.master.transportes.driver.core.result.ApiResult
 import com.master.transportes.driver.feature.driver.domain.repository.DriverRepository
+import com.master.transportes.driver.feature.wallet.domain.WalletStore
+import com.master.transportes.driver.feature.wallet.domain.repository.WalletRepository
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -15,20 +17,25 @@ import javax.inject.Singleton
  * Responsabilidades:
  *   - getMe (via refreshDriver) → grava no Room → Flow atualiza todas as telas
  *   - getStatus → atualiza o isOnline do DriverSessionStore (memória)
+ *   - getWallet (via refreshWallet) → atualiza o WalletStore (memória)
  *
  * Proteção:
- *   - Um único Mutex serializa initialize(), refreshDriver(), refreshStatus()
- *     e reset(). Qualquer combinação destes nunca roda em paralelo, então
- *     GET /me e GET /status não duplicam entre bootstrap, retry e logout.
- *   - driverFetched/statusFetched independentes: se um dos dois falhar, o
- *     outro não é refeito à toa e o que falhou pode ser tentado de novo.
+ *   - Um único Mutex serializa initialize(), refreshDriver(), refreshStatus(),
+ *     refreshWallet() e reset(). Qualquer combinação destes nunca roda em
+ *     paralelo, então GET /me, GET /status e GET /wallet não duplicam entre
+ *     bootstrap, retry e logout.
+ *   - driverFetched/statusFetched/walletFetched independentes: se um dos
+ *     recursos falhar, os outros não são refeitos à toa e o que falhou pode
+ *     ser tentado de novo.
  *
- * Regra: nenhuma tela é dona de getMe()/getStatus() — este bootstrap é dono.
+ * Regra: nenhuma tela é dona dessas chamadas — este bootstrap é dono.
  */
 @Singleton
 class SessionBootstrap @Inject constructor(
     private val repository: DriverRepository,
     private val store: DriverSessionStore,
+    private val walletRepository: WalletRepository,
+    private val walletStore: WalletStore,
 ) {
 
     private val mutex = Mutex()
@@ -39,9 +46,13 @@ class SessionBootstrap @Inject constructor(
     /** Status online já lido com sucesso (não refaz getStatus à toa). */
     private var statusFetched = false
 
+    /** Wallet já lida com sucesso (não refaz getWallet à toa). */
+    private var walletFetched = false
+
     /**
-     * Inicializa a sessão: getMe e getStatus em paralelo, uma única vez por
-     * sucesso. Idempotente e à prova de concorrência (login + cold start).
+     * Inicializa a sessão: getMe, getStatus e getWallet em paralelo, uma
+     * única vez por sucesso. Idempotente e à prova de concorrência
+     * (login + cold start).
      */
     suspend fun initialize() = mutex.withLock {
         coroutineScope {
@@ -50,6 +61,9 @@ class SessionBootstrap @Inject constructor(
             }
             if (!statusFetched) {
                 launch { refreshStatusInternal() }
+            }
+            if (!walletFetched) {
+                launch { refreshWalletInternal() }
             }
         }
     }
@@ -68,6 +82,11 @@ class SessionBootstrap @Inject constructor(
         mutex.withLock { refreshStatusInternal() }
     }
 
+    /** Lê o saldo (GET /wallet → memória). Usado no retry das telas. */
+    suspend fun refreshWallet() {
+        mutex.withLock { refreshWalletInternal() }
+    }
+
     /**
      * Zera o controle de inicialização. Chamado no logout (via logoutEvents)
      * para que uma nova conta refaça o bootstrap completo. Serializado pelo
@@ -77,6 +96,7 @@ class SessionBootstrap @Inject constructor(
         mutex.withLock {
             driverFetched = false
             statusFetched = false
+            walletFetched = false
         }
     }
 
@@ -107,6 +127,21 @@ class SessionBootstrap @Inject constructor(
             is ApiResult.Error -> {
                 statusFetched = false
                 store.setStatusError(result.error)
+            }
+        }
+    }
+
+    private suspend fun refreshWalletInternal() {
+        walletStore.setLoading()
+        when (val result = walletRepository.refreshWallet()) {
+            is ApiResult.Success -> {
+                walletFetched = true
+                walletStore.setWallet(result.data)
+            }
+
+            is ApiResult.Error -> {
+                walletFetched = false
+                walletStore.setError(result.error)
             }
         }
     }

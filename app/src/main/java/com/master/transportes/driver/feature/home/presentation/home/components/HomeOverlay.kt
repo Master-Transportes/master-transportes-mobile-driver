@@ -72,7 +72,7 @@ private fun TopSection(
     ) {
         when (state) {
             is HomeUiState.Success ->
-                WalletBadge(balanceInCents = state.driver.balanceInCents)
+                WalletBadge(balanceInCents = state.wallet?.balanceInCents ?: 0L)
 
             is HomeUiState.Error -> {
                 Spacer(Modifier.height(8.dp))

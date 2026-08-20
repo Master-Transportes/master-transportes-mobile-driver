@@ -10,6 +10,7 @@ import com.master.transportes.driver.feature.driver.domain.DriverSession
 import com.master.transportes.driver.feature.driver.domain.DriverSessionStore
 import com.master.transportes.driver.feature.driver.domain.SessionBootstrap
 import com.master.transportes.driver.feature.driver.domain.repository.DriverRepository
+import com.master.transportes.driver.feature.wallet.domain.WalletStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +32,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val driverRepository: DriverRepository,
     private val driverSessionStore: DriverSessionStore,
+    private val walletStore: WalletStore,
     private val sessionBootstrap: SessionBootstrap,
     private val locationProvider: LocationProvider,
     private val gpsMonitor: GpsMonitor
@@ -52,9 +54,10 @@ class HomeViewModel @Inject constructor(
 
     val uiState: StateFlow<HomeUiState> = combine(
         driverSessionStore.state,
+        walletStore.state,
         _onlineActionChanging,
         _location,
-    ) { session, actionChanging, location ->
+    ) { session, walletState, actionChanging, location ->
         val onlineStatus =
             if (actionChanging) {
                 OnlineStatusUiState.Loading(deriveOnlineStatus(session))
@@ -74,6 +77,7 @@ class HomeViewModel @Inject constructor(
                 driver = session.driver,
                 onlineStatus = onlineStatus,
                 location = location,
+                wallet = walletState.wallet,
             )
 
             else -> HomeUiState.Loading

@@ -22,5 +22,4 @@ data class DriverEntity(
     val status: String,
     val rejectionReason: String?,
     val banReason: String?,
-    val balanceInCents: Long,
 )

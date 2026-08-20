@@ -89,6 +89,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
 
+    // Process Owner para background ou foreground
+    implementation(libs.androidx.lifecycle.process)
+
     // Coroutines (Hj temos corroutines como o viewModelScope.launch { }
     implementation(libs.kotlinx.coroutines)
 

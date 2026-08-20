@@ -19,8 +19,7 @@ class DriverRepositoryImpl @Inject constructor(
     sessionManager: SessionManager
 ) : BaseRepository(sessionManager), DriverRepository {
 
-    override fun observeDriver(): Flow<Driver?> =
-        driverDao.observeDriver().map { it?.toDomain() }
+    override fun observeDriver(): Flow<Driver?> = driverDao.observeDriver().map { it?.toDomain() }
 
     override suspend fun refreshDriver(): ApiResult<Unit> = safeApiCall {
         driverDao.upsert(remote.getMe().toEntity())

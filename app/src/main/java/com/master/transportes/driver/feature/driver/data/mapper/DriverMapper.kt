@@ -20,7 +20,6 @@ fun DriverProfileResponseDto.toDomain(): Driver {
         status = status.toDriverStatus(),
         rejectionReason = rejectionReason,
         banReason = banReason,
-        balanceInCents = balance
     )
 }
 
@@ -32,7 +31,6 @@ fun DriverProfileResponseDto.toEntity(): DriverEntity {
         status = status,
         rejectionReason = rejectionReason,
         banReason = banReason,
-        balanceInCents = balance
     )
 }
 
@@ -44,7 +42,6 @@ fun DriverEntity.toDomain(): Driver {
         status = status.toDriverStatus(),
         rejectionReason = rejectionReason,
         banReason = banReason,
-        balanceInCents = balanceInCents
     )
 }
 

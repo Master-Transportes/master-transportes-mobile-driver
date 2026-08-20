@@ -3,6 +3,7 @@ package com.master.transportes.driver.feature.home.presentation.home
 import com.google.android.gms.maps.model.LatLng
 import com.master.transportes.driver.core.error.AppError
 import com.master.transportes.driver.feature.driver.domain.model.Driver
+import com.master.transportes.driver.feature.wallet.domain.model.Wallet
 
 /**
  * Estado da tela Home.
@@ -25,6 +26,7 @@ sealed interface HomeUiState {
         val driver: Driver,
         val onlineStatus: OnlineStatusUiState,
         val location: LocationUiState,
+        val wallet: Wallet? = null,
     ) : HomeUiState
 
     /** Falha ao carregar o motorista — a tela não pode renderizar o conteúdo. */

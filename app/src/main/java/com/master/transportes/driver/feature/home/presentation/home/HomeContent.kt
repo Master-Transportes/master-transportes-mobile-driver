@@ -36,6 +36,7 @@ import com.master.transportes.driver.feature.rideoffer.domain.model.RideOffer
 import com.master.transportes.driver.feature.rideoffer.domain.model.RidePoint
 import com.master.transportes.driver.feature.rideoffer.presentation.rideoffer.RideOfferCard
 import com.master.transportes.driver.feature.rideoffer.presentation.rideoffer.offerExpirationIso
+import com.master.transportes.driver.feature.wallet.domain.model.Wallet
 import com.master.transportes.driver.ui.theme.MasterTransportesMobileDriverTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -186,8 +187,8 @@ fun HomeSuccessOnlinePreview() {
                     fullName = "Enderson Alves da Silva",
                     email = "masterzarby@gmail.com",
                     status = DriverStatus.APPROVED,
-                    balanceInCents = 15922L
                 ),
+                wallet = Wallet(balanceInCents = 15922L),
                 onlineStatus = OnlineStatusUiState.Online,
                 location = LocationUiState(
                     isGranted = true,
@@ -212,8 +213,8 @@ fun HomeSuccessOfflinePreview() {
                     fullName = "Enderson Alves da Silva",
                     email = "masterzarby@gmail.com",
                     status = DriverStatus.APPROVED,
-                    balanceInCents = 15922L
                 ),
+                wallet = Wallet(balanceInCents = 15922L),
                 onlineStatus = OnlineStatusUiState.Offline,
                 location = LocationUiState()
             ),
@@ -236,8 +237,8 @@ fun HomePendingDriverPreview() {
                     fullName = "Maria Oliveira",
                     email = "maria@email.com",
                     status = DriverStatus.PENDING,
-                    balanceInCents = 0L
                 ),
+                wallet = Wallet(balanceInCents = 0L),
                 onlineStatus = OnlineStatusUiState.Offline,
                 location = LocationUiState(isGranted = true, isGpsEnabled = true)
             ),
@@ -260,8 +261,8 @@ fun HomeLocationDeniedPreview() {
                     fullName = "Enderson Alves da Silva",
                     email = "masterzarby@gmail.com",
                     status = DriverStatus.APPROVED,
-                    balanceInCents = 15922L
                 ),
+                wallet = Wallet(balanceInCents = 15922L),
                 onlineStatus = OnlineStatusUiState.Offline,
                 location = LocationUiState(isGranted = false, isGpsEnabled = true)
             ),
@@ -282,8 +283,8 @@ fun HomeGpsDisabledPreview() {
                     fullName = "Enderson Alves da Silva",
                     email = "masterzarby@gmail.com",
                     status = DriverStatus.APPROVED,
-                    balanceInCents = 15922L
                 ),
+                wallet = Wallet(balanceInCents = 15922L),
                 onlineStatus = OnlineStatusUiState.Offline,
                 location = LocationUiState(isGranted = true, isGpsEnabled = false)
             ),
@@ -306,8 +307,8 @@ fun HomeChangingOnlineStatusPreview() {
                     fullName = "Enderson Alves da Silva",
                     email = "masterzarby@gmail.com",
                     status = DriverStatus.APPROVED,
-                    balanceInCents = 15922L
                 ),
+                wallet = Wallet(balanceInCents = 15922L),
                 onlineStatus = OnlineStatusUiState.Loading(OnlineStatusUiState.Offline),
                 location = LocationUiState(isGranted = true, isGpsEnabled = true)
             ),
@@ -328,8 +329,8 @@ fun HomeStatusErrorPreview() {
                     fullName = "Enderson Alves da Silva",
                     email = "masterzarby@gmail.com",
                     status = DriverStatus.APPROVED,
-                    balanceInCents = 15922L
                 ),
+                wallet = Wallet(balanceInCents = 15922L),
                 onlineStatus = OnlineStatusUiState.Error(
                     error = AppError.Network,
                     lastKnownOnline = false
@@ -353,8 +354,8 @@ fun HomeActionErrorPreview() {
                     fullName = "Enderson Alves da Silva",
                     email = "masterzarby@gmail.com",
                     status = DriverStatus.APPROVED,
-                    balanceInCents = 15922L
                 ),
+                wallet = Wallet(balanceInCents = 15922L),
                 onlineStatus = OnlineStatusUiState.Offline,
                 location = LocationUiState(isGranted = true, isGpsEnabled = true)
             ),
@@ -375,8 +376,8 @@ fun HomeRideOfferPreview() {
                     fullName = "Enderson Alves da Silva",
                     email = "masterzarby@gmail.com",
                     status = DriverStatus.APPROVED,
-                    balanceInCents = 15922L
                 ),
+                wallet = Wallet(balanceInCents = 15922L),
                 onlineStatus = OnlineStatusUiState.Online,
                 location = LocationUiState(
                     isGranted = true,
